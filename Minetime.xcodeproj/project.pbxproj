@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		DE1D72361F1FDC1F0019D4FF /* Drill.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE1D72351F1FDC1F0019D4FF /* Drill.swift */; };
+		DE1D72381F1FDE550019D4FF /* DrillActions.sks in Resources */ = {isa = PBXBuildFile; fileRef = DE1D72371F1FDE550019D4FF /* DrillActions.sks */; };
 		DE6B4C7B1F1D209100770CAA /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE6B4C7A1F1D209100770CAA /* AppDelegate.swift */; };
 		DE6B4C7D1F1D209100770CAA /* GameScene.sks in Resources */ = {isa = PBXBuildFile; fileRef = DE6B4C7C1F1D209100770CAA /* GameScene.sks */; };
 		DE6B4C7F1F1D209100770CAA /* Actions.sks in Resources */ = {isa = PBXBuildFile; fileRef = DE6B4C7E1F1D209100770CAA /* Actions.sks */; };
@@ -15,10 +17,11 @@
 		DE6B4C861F1D209100770CAA /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = DE6B4C841F1D209100770CAA /* Main.storyboard */; };
 		DE6B4C881F1D209100770CAA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DE6B4C871F1D209100770CAA /* Assets.xcassets */; };
 		DE6B4C8B1F1D209100770CAA /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = DE6B4C891F1D209100770CAA /* LaunchScreen.storyboard */; };
-		DE8308EA1F1D58C300E42121 /* Drill.sks in Resources */ = {isa = PBXBuildFile; fileRef = DE8308E91F1D58C300E42121 /* Drill.sks */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		DE1D72351F1FDC1F0019D4FF /* Drill.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Drill.swift; sourceTree = "<group>"; };
+		DE1D72371F1FDE550019D4FF /* DrillActions.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = DrillActions.sks; sourceTree = "<group>"; };
 		DE6B4C771F1D209100770CAA /* Minetime.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Minetime.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DE6B4C7A1F1D209100770CAA /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		DE6B4C7C1F1D209100770CAA /* GameScene.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = GameScene.sks; sourceTree = "<group>"; };
@@ -29,7 +32,6 @@
 		DE6B4C871F1D209100770CAA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		DE6B4C8A1F1D209100770CAA /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		DE6B4C8C1F1D209100770CAA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		DE8308E91F1D58C300E42121 /* Drill.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = Drill.sks; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -46,6 +48,7 @@
 		DE6B4C6E1F1D209100770CAA = {
 			isa = PBXGroup;
 			children = (
+				DE1D72371F1FDE550019D4FF /* DrillActions.sks */,
 				DE6B4C791F1D209100770CAA /* Minetime */,
 				DE6B4C781F1D209100770CAA /* Products */,
 			);
@@ -63,7 +66,7 @@
 			isa = PBXGroup;
 			children = (
 				DE6B4C7A1F1D209100770CAA /* AppDelegate.swift */,
-				DE8308E91F1D58C300E42121 /* Drill.sks */,
+				DE1D72351F1FDC1F0019D4FF /* Drill.swift */,
 				DE6B4C7C1F1D209100770CAA /* GameScene.sks */,
 				DE6B4C7E1F1D209100770CAA /* Actions.sks */,
 				DE6B4C801F1D209100770CAA /* GameScene.swift */,
@@ -139,9 +142,9 @@
 				DE6B4C861F1D209100770CAA /* Main.storyboard in Resources */,
 				DE6B4C7D1F1D209100770CAA /* GameScene.sks in Resources */,
 				DE6B4C881F1D209100770CAA /* Assets.xcassets in Resources */,
+				DE1D72381F1FDE550019D4FF /* DrillActions.sks in Resources */,
 				DE6B4C8B1F1D209100770CAA /* LaunchScreen.storyboard in Resources */,
 				DE6B4C7F1F1D209100770CAA /* Actions.sks in Resources */,
-				DE8308EA1F1D58C300E42121 /* Drill.sks in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -153,6 +156,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DE6B4C811F1D209100770CAA /* GameScene.swift in Sources */,
+				DE1D72361F1FDC1F0019D4FF /* Drill.swift in Sources */,
 				DE6B4C831F1D209100770CAA /* GameViewController.swift in Sources */,
 				DE6B4C7B1F1D209100770CAA /* AppDelegate.swift in Sources */,
 			);
