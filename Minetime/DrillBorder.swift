@@ -1,5 +1,5 @@
 //
-//  Drill.swift
+//  DrillBorder.swift
 //  Minetime
 //
 //  Created by Wes Ong on 2017-07-19.
@@ -9,15 +9,9 @@
 import Foundation
 import SpriteKit
 
-class Drill: SKSpriteNode {
+class DrillBorder: SKSpriteNode {
     
-    let idleAction :SKAction = SKAction.init(named: "IdleDrill")!
-    
-    /* Initialize drill effects */
-    var drillBackground: SKSpriteNode!
-    var drillSideDebris: SKEmitterNode!
-    var drillBackDebris: SKEmitterNode!
-    var drillFire: SKEmitterNode!
+    let idleAction :SKAction = SKAction.init(named: "IdleDrillBorder")!
     
     /* You are required to implement this for your subclass to work */
     required init?(coder aDecoder: NSCoder) {
@@ -30,17 +24,5 @@ class Drill: SKSpriteNode {
     /* You are required to implement this for your subclass to work */
     override init(texture: SKTexture?, color: UIColor, size: CGSize) {
         super.init(texture: texture, color: color, size: size)
-    }
-    
-    func runDeathAnimation(){
-    
-    }
-    
-    func runDrillingAnimation(){
-        
-    }
-    
-    func stopDrillingAnimation() {
-        
     }
 }
