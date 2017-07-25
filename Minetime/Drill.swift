@@ -20,6 +20,7 @@ class Drill: SKSpriteNode {
     var drillSideDebris: SKEmitterNode!
     var drillBackDebris: SKEmitterNode!
     var drillFire: SKEmitterNode!
+    
     var drillBoomNode1: SKSpriteNode!
     var drillBoomNode2: SKSpriteNode!
     var drillBoomNode3: SKSpriteNode!
@@ -44,6 +45,7 @@ class Drill: SKSpriteNode {
         drillBackDebris = self.childNode(withName: "drillDebrisBack") as! SKEmitterNode
         drillFire = self.childNode(withName: "drillFire") as! SKEmitterNode
         
+        
         /* Set up drill death effect references */
         drillBoomNode1 = self.childNode(withName: "drillBoom1") as! SKSpriteNode
         drillBoomNode2 = self.childNode(withName: "drillBoom2") as! SKSpriteNode
@@ -51,7 +53,7 @@ class Drill: SKSpriteNode {
         drillBoomNode4 = self.childNode(withName: "drillBoom4") as! SKSpriteNode
         drillBoomNode5 = self.childNode(withName: "drillBoom5") as! SKSpriteNode
         drillSmoke = self.childNode(withName: "drillSmoke") as! SKEmitterNode
-        
+ 
         stopDrillingAnimation()
     }
     
@@ -61,6 +63,8 @@ class Drill: SKSpriteNode {
     }
     
     func runDeathAnimation(){
+        self.run(SKAction(named: "DrillShake")!)
+        
         /* Turn on smoke */
         drillSmoke.resetSimulation()
         drillSmoke.isHidden = false
@@ -86,6 +90,8 @@ class Drill: SKSpriteNode {
             self.physicsBody?.collisionBitMask = 0
             self.run(self.moveDownAction, completion:  { [unowned self] in
                 self.setScrollingUp()
+                self.physicsBody?.angularVelocity = 0
+                self.zRotation = CGFloat(0).degreesToRadians()
                 self.run(self.moveUpResetAction)
             })
         })
@@ -96,7 +102,7 @@ class Drill: SKSpriteNode {
     
     func runDrillingAnimation(){
         /* Enable drill collisions */
-        self.physicsBody?.collisionBitMask = 2
+        self.physicsBody?.collisionBitMask = 5
         self.physicsBody?.categoryBitMask = 1
         
         self.run(idleAction, withKey: "idle")

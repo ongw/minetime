@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		DE1D72361F1FDC1F0019D4FF /* Drill.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE1D72351F1FDC1F0019D4FF /* Drill.swift */; };
 		DE1D72381F1FDE550019D4FF /* DrillActions.sks in Resources */ = {isa = PBXBuildFile; fileRef = DE1D72371F1FDE550019D4FF /* DrillActions.sks */; };
-		DE1D723A1F211B890019D4FF /* DrillBorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE1D72391F211B880019D4FF /* DrillBorder.swift */; };
 		DE1D723D1F211D200019D4FF /* DrillDebris.sks in Resources */ = {isa = PBXBuildFile; fileRef = DE1D723B1F211D200019D4FF /* DrillDebris.sks */; };
 		DE1D723E1F211D200019D4FF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DE1D723C1F211D200019D4FF /* Assets.xcassets */; };
 		DE6B4C7B1F1D209100770CAA /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE6B4C7A1F1D209100770CAA /* AppDelegate.swift */; };
@@ -20,16 +19,19 @@
 		DE6B4C861F1D209100770CAA /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = DE6B4C841F1D209100770CAA /* Main.storyboard */; };
 		DE6B4C881F1D209100770CAA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DE6B4C871F1D209100770CAA /* Assets.xcassets */; };
 		DE6B4C8B1F1D209100770CAA /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = DE6B4C891F1D209100770CAA /* LaunchScreen.storyboard */; };
+		DE7346D61F26B99B00AF19BA /* CartActions.sks in Resources */ = {isa = PBXBuildFile; fileRef = DE7346D51F26B99B00AF19BA /* CartActions.sks */; };
+		DE7346D81F26BE6000AF19BA /* Cart.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7346D71F26BE6000AF19BA /* Cart.swift */; };
 		DECE11B11F212A180005D447 /* DrillFire.sks in Resources */ = {isa = PBXBuildFile; fileRef = DECE11B01F212A180005D447 /* DrillFire.sks */; };
 		DECE11B31F214AE20005D447 /* Obstacle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DECE11B21F214AE20005D447 /* Obstacle.swift */; };
 		DECE11B51F2268AE0005D447 /* MyScene.sks in Resources */ = {isa = PBXBuildFile; fileRef = DECE11B41F2268AE0005D447 /* MyScene.sks */; };
 		DECE11B91F226CBF0005D447 /* DrillDeath.sks in Resources */ = {isa = PBXBuildFile; fileRef = DECE11B81F226CBF0005D447 /* DrillDeath.sks */; };
+		DECE11BB1F255C530005D447 /* CGFloat+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DECE11BA1F255C530005D447 /* CGFloat+Extensions.swift */; };
+		DECE11BF1F25D3050005D447 /* VCR_OSD_MONO_1.001.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DECE11BE1F25D3050005D447 /* VCR_OSD_MONO_1.001.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		DE1D72351F1FDC1F0019D4FF /* Drill.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Drill.swift; sourceTree = "<group>"; };
 		DE1D72371F1FDE550019D4FF /* DrillActions.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = DrillActions.sks; sourceTree = "<group>"; };
-		DE1D72391F211B880019D4FF /* DrillBorder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DrillBorder.swift; sourceTree = "<group>"; };
 		DE1D723B1F211D200019D4FF /* DrillDebris.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = DrillDebris.sks; sourceTree = "<group>"; };
 		DE1D723C1F211D200019D4FF /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		DE6B4C771F1D209100770CAA /* Minetime.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Minetime.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -42,10 +44,14 @@
 		DE6B4C871F1D209100770CAA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		DE6B4C8A1F1D209100770CAA /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		DE6B4C8C1F1D209100770CAA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		DE7346D51F26B99B00AF19BA /* CartActions.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; name = CartActions.sks; path = Minetime/CartActions.sks; sourceTree = "<group>"; };
+		DE7346D71F26BE6000AF19BA /* Cart.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Cart.swift; sourceTree = "<group>"; };
 		DECE11B01F212A180005D447 /* DrillFire.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = DrillFire.sks; sourceTree = "<group>"; };
 		DECE11B21F214AE20005D447 /* Obstacle.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Obstacle.swift; sourceTree = "<group>"; };
 		DECE11B41F2268AE0005D447 /* MyScene.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = MyScene.sks; sourceTree = "<group>"; };
 		DECE11B81F226CBF0005D447 /* DrillDeath.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = DrillDeath.sks; sourceTree = "<group>"; };
+		DECE11BA1F255C530005D447 /* CGFloat+Extensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "CGFloat+Extensions.swift"; sourceTree = "<group>"; };
+		DECE11BE1F25D3050005D447 /* VCR_OSD_MONO_1.001.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = VCR_OSD_MONO_1.001.ttf; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,6 +72,7 @@
 				DE1D723B1F211D200019D4FF /* DrillDebris.sks */,
 				DECE11B01F212A180005D447 /* DrillFire.sks */,
 				DECE11B81F226CBF0005D447 /* DrillDeath.sks */,
+				DE7346D51F26B99B00AF19BA /* CartActions.sks */,
 				DE1D723C1F211D200019D4FF /* Assets.xcassets */,
 				DE6B4C791F1D209100770CAA /* Minetime */,
 				DE6B4C781F1D209100770CAA /* Products */,
@@ -85,14 +92,16 @@
 			children = (
 				DE6B4C7A1F1D209100770CAA /* AppDelegate.swift */,
 				DE1D72351F1FDC1F0019D4FF /* Drill.swift */,
+				DE7346D71F26BE6000AF19BA /* Cart.swift */,
 				DECE11B41F2268AE0005D447 /* MyScene.sks */,
 				DE6B4C7C1F1D209100770CAA /* GameScene.sks */,
-				DE1D72391F211B880019D4FF /* DrillBorder.swift */,
 				DECE11B21F214AE20005D447 /* Obstacle.swift */,
+				DECE11BA1F255C530005D447 /* CGFloat+Extensions.swift */,
 				DE6B4C7E1F1D209100770CAA /* Actions.sks */,
 				DE6B4C801F1D209100770CAA /* GameScene.swift */,
 				DE6B4C821F1D209100770CAA /* GameViewController.swift */,
 				DE6B4C841F1D209100770CAA /* Main.storyboard */,
+				DECE11BE1F25D3050005D447 /* VCR_OSD_MONO_1.001.ttf */,
 				DE6B4C871F1D209100770CAA /* Assets.xcassets */,
 				DE6B4C891F1D209100770CAA /* LaunchScreen.storyboard */,
 				DE6B4C8C1F1D209100770CAA /* Info.plist */,
@@ -161,6 +170,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DECE11B11F212A180005D447 /* DrillFire.sks in Resources */,
+				DE7346D61F26B99B00AF19BA /* CartActions.sks in Resources */,
 				DE6B4C861F1D209100770CAA /* Main.storyboard in Resources */,
 				DECE11B51F2268AE0005D447 /* MyScene.sks in Resources */,
 				DE6B4C7D1F1D209100770CAA /* GameScene.sks in Resources */,
@@ -169,6 +179,7 @@
 				DE6B4C8B1F1D209100770CAA /* LaunchScreen.storyboard in Resources */,
 				DE1D723D1F211D200019D4FF /* DrillDebris.sks in Resources */,
 				DE1D723E1F211D200019D4FF /* Assets.xcassets in Resources */,
+				DECE11BF1F25D3050005D447 /* VCR_OSD_MONO_1.001.ttf in Resources */,
 				DECE11B91F226CBF0005D447 /* DrillDeath.sks in Resources */,
 				DE6B4C7F1F1D209100770CAA /* Actions.sks in Resources */,
 			);
@@ -184,8 +195,9 @@
 				DE6B4C811F1D209100770CAA /* GameScene.swift in Sources */,
 				DE1D72361F1FDC1F0019D4FF /* Drill.swift in Sources */,
 				DECE11B31F214AE20005D447 /* Obstacle.swift in Sources */,
+				DE7346D81F26BE6000AF19BA /* Cart.swift in Sources */,
 				DE6B4C831F1D209100770CAA /* GameViewController.swift in Sources */,
-				DE1D723A1F211B890019D4FF /* DrillBorder.swift in Sources */,
+				DECE11BB1F255C530005D447 /* CGFloat+Extensions.swift in Sources */,
 				DE6B4C7B1F1D209100770CAA /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

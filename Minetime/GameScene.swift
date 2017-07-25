@@ -11,7 +11,7 @@ import GameplayKit
 
 /* Tracking enum for game state */
 enum GameState {
-    case ready, drilling, collecting, death, wait
+    case ready, drilling, collecting, wait
 }
 
 enum direction {
@@ -25,11 +25,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var undergroundSource: SKSpriteNode!
     var undergroundLayer: SKNode!
     var drill: Drill!
+    var cart: Cart!
+    
+    /* Initialize physics variables */
+    var velocityChange: CGFloat = 75
+    var positionChange: CGFloat = 1
+
+    static var moneyLabel: SKLabelNode!
+    static var money: Int = 0 {
+        didSet {
+            GameScene.moneyLabel.text = "$\(String(GameScene.money))"
+        }
+    }
     
     /* Tracks the last known touch position */
     var touchTracker: CGPoint = CGPoint(x: 160, y: 0)
     
-    /* Undeground segment tracking */
+    /* Underground segment tracking */
     var segmentStack = [SKNode]()
     
     /* Initiliaize game state */
@@ -38,11 +50,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     /* Initialize camera elements */
     var cameraNode: SKCameraNode!
-    let moveCameraDownAction :SKAction = SKAction.init(named: "MoveCameraDown")!
+    let moveCameraDownAction: SKAction = SKAction.init(named: "MoveCameraDown")!
+    let moveCameraUpAction: SKAction = SKAction.init(named: "MoveCameraUp")!
     
-    //MARK: justForTesting
-    let moveCameraUpAction :SKAction = SKAction.init(named: "MoveCameraUp")!
-    
+    let drillDerotateAction: SKAction = SKAction.init(named: "DrillDerotate")!
     
     override func didMove(to view: SKView) {
         
@@ -70,18 +81,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         //        /* Spawn initial obstacles */
         //        spawnObstacles(groundSegment: undergroundLayer.childNode(withName: "groundSegment")!, spawnMin: 2, spawnMax: 2, texture: SKTexture(imageNamed: "copperOre"))
         
+        GameScene.moneyLabel = childNode(withName: "//moneyLabel") as! SKLabelNode
+        
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         if gameState == .ready {
+            /* Move camera down to center drill */
             cameraNode.run(moveCameraDownAction, completion: { [unowned self] in
                 self.drill.runDrillingAnimation()
             })
-            //MARK: justForTesting
+            
+            /* Show drill */
             drill.isHidden = false
             
             /* Set to drilling game state */
             gameState = .drilling
+            
+            /* Reset money value */
+            GameScene.money = 0
         }
         
         if gameState == .drilling {
@@ -100,8 +118,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         /* Stop drill leftward/rightward movement */
         drillDirection = .middle
+        
+        /* Cancel rotation */
+        drill.physicsBody?.angularVelocity = 0
+        
+        if gameState != .wait {
+            /* Derotate drill (unless collision) */
+            drill.run(drillDerotateAction)
+        }
     }
     
+    /* Determines drill movement */
     func setDrillMovement(touch: UITouch) {
         /* Update tracker to latest touch/touch movement */
         touchTracker = touch.location(in: self)
@@ -111,7 +138,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         /* Check if touch is close to current drill position */
         if touchTracker.x > drillPosition.x - 10 && touchTracker.x < drill.position.x + 10 {
+            /* Stop drill leftward/rightward movement */
             drillDirection = .middle
+            drill.physicsBody?.velocity.dx = 0
         }
         else if touchTracker.x < drillPosition.x {
             drillDirection = .left
@@ -141,8 +170,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             /* Set ground segment position */
             newUndergroundSegment.position = self.convert(CGPoint(x: 0, y: -449), to: undergroundLayer)
             
+            //MARK: SpawnObstacles
             /* Spawn copper obstacles */
-            spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 3, spawnMax: 5, texture: SKTexture(imageNamed: "copperOre"))
+            spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 3, spawnMax: 5, texture: SKTexture(imageNamed: "wesOre"))
             
             /* Add to main underground layer */
             undergroundLayer.addChild(newUndergroundSegment)
@@ -158,13 +188,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func scrollCollectMode() {
-        if gameState == .death {
-            /* Scroll for collecting */
-            undergroundLayer.position.y -= 2
-        }
-        else {
-            undergroundLayer.position.y -= 10
-        }
+
+        undergroundLayer.position.y -= 10
         
         /* Get position of topmost ground segment in undergroundLayer */
         let undergroundOld = undergroundLayer.convert(undergroundLayer.children[0].position, to: self)
@@ -200,7 +225,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         //MARK: justForTesting
         if undergroundLayer.children.count == 2 && undergroundLayer.convert(undergroundLayer.children[1].position, to: self).y <= -295{
-            
             cameraNode.run(moveCameraUpAction)
             gameState = .ready
             drill.isHidden = false
@@ -212,7 +236,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         for _ in 1 ... Int(arc4random_uniform(UInt32(spawnMax - spawnMin))) + spawnMin {
             
             /* Declare new obstacle object */
-            let newObstacle = Obstacle(texture: texture, tapCount: 1, cashValue: 3)
+            let newObstacle = Obstacle(texture: texture, tapCount: 1, moneyValue: 3)
             
             /* Randomize obstacle position */
             newObstacle.position = groundSegment.convert(CGPoint(x: Double(arc4random_uniform(UInt32(280)) + 20), y: Double(arc4random_uniform(UInt32(280))) + 20), to: groundSegment)
@@ -227,33 +251,56 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let contactB:SKPhysicsBody = contact.bodyB
         
         if contactA.categoryBitMask == 1 || contactB.categoryBitMask == 1 {
+            self.gameState = .wait
+            self.drillDirection = .middle
+            
+            drill.physicsBody?.velocity.dx = 0
+            
+            drill.removeAllActions()
             drill.runDeathAnimation()
             
             /* Disable drill collisions */
             drill.physicsBody?.categoryBitMask = 0
             
-            if gameState == .drilling {
                 
-                for node in self.children {
+                for node in cameraNode.children {
                     if node.name == "triangle" {
                         node.run(SKAction(named: "FlashTriangle")!)
                     }
                 }
-                
-                self.gameState = .wait
+            
                 run(SKAction.wait(forDuration: 1.5), completion:  { [unowned self] in
                     if self.gameState != .ready {
                         self.gameState = .collecting
+                        
+                        for segment in self.segmentStack {
+                            for node in segment.children {
+                                if String(describing: type(of: node)) == "Obstacle" {
+                                    (node as! Obstacle).setMiningEnabled()
+                                }
+                            }
+                        }
+                        
+                        for segment in self.undergroundLayer.children {
+                            for node in segment.children {
+                                if String(describing: type(of: node)) == "Obstacle" {
+                                    (node as! Obstacle).setMiningEnabled()
+                                }
+                            }
+                        }
                     }
                     
                 })
-            }
         }
     }
     
     override func update(_ currentTime: TimeInterval) {
-        /* Called before each frame is rendered */
+        /* Clamp veolcity in y */
+        drill.physicsBody?.velocity.dy = 0
+        drill.position.y = 160
+        drill.zRotation.clamp(v1: CGFloat(-4).degreesToRadians(), CGFloat(4).degreesToRadians())
         
+        /* Called before each frame is rendered */
         if gameState == .ready {
             return
         }
@@ -261,10 +308,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         /* Check if drill direction corresponds to current position of touch
          (Prevents overshoot of drill movement) */
         if drillDirection == .left && drill.position.x > touchTracker.x {
-            moveDrillLeft(by: 3.5)
+            moveDrillLeft()
         }
         else if drillDirection == .right && drill.position.x < touchTracker.x{
-            moveDrillRight(by: 3.5)
+            moveDrillRight()
+        }
+        else {
+            drill.physicsBody?.velocity.dx = 0
+            drill.physicsBody?.angularVelocity = 0
         }
         
         if gameState == .drilling {
@@ -277,15 +328,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     
-    func moveDrillLeft(by xVal: CGFloat) {
+    func moveDrillLeft() {
         /* Small leftward movement */
-        let moveStartAction = SKAction.moveBy(x: -xVal, y: 0, duration: 0.005)
+        let moveStartAction = SKAction.moveBy(x: -positionChange, y: 0, duration: 0.005)
+        drill.physicsBody?.velocity.dx = -velocityChange
+        drill.physicsBody?.applyTorque(-0.15)
+        drill.physicsBody?.angularVelocity = -0.05
         drill.run(moveStartAction)
     }
     
-    func moveDrillRight(by xVal: CGFloat) {
+    func moveDrillRight() {
         /* Small rightward movement */
-        let moveStartAction = SKAction.moveBy(x: xVal, y: 0, duration: 0.005)
+        let moveStartAction = SKAction.moveBy(x: positionChange, y: 0, duration: 0.005)
+        drill.physicsBody?.velocity.dx = velocityChange
+        drill.physicsBody?.applyTorque(0.15)
+        drill.physicsBody?.angularVelocity = 0.05
         drill.run(moveStartAction)
     }
 }
