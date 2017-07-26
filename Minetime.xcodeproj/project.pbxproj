@@ -21,6 +21,10 @@
 		DE6B4C8B1F1D209100770CAA /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = DE6B4C891F1D209100770CAA /* LaunchScreen.storyboard */; };
 		DE7346D61F26B99B00AF19BA /* CartActions.sks in Resources */ = {isa = PBXBuildFile; fileRef = DE7346D51F26B99B00AF19BA /* CartActions.sks */; };
 		DE7346D81F26BE6000AF19BA /* Cart.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7346D71F26BE6000AF19BA /* Cart.swift */; };
+		DE7346DC1F27D74800AF19BA /* CatchItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7346DB1F27D74800AF19BA /* CatchItem.swift */; };
+		DE7346DE1F27E9D100AF19BA /* OreDebris1.sks in Resources */ = {isa = PBXBuildFile; fileRef = DE7346DD1F27E9D100AF19BA /* OreDebris1.sks */; };
+		DE7346E01F27F54B00AF19BA /* OreDebris2.sks in Resources */ = {isa = PBXBuildFile; fileRef = DE7346DF1F27F54B00AF19BA /* OreDebris2.sks */; };
+		DE7346E21F292E2400AF19BA /* CartCatch.sks in Resources */ = {isa = PBXBuildFile; fileRef = DE7346E11F292E2300AF19BA /* CartCatch.sks */; };
 		DECE11B11F212A180005D447 /* DrillFire.sks in Resources */ = {isa = PBXBuildFile; fileRef = DECE11B01F212A180005D447 /* DrillFire.sks */; };
 		DECE11B31F214AE20005D447 /* Obstacle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DECE11B21F214AE20005D447 /* Obstacle.swift */; };
 		DECE11B51F2268AE0005D447 /* MyScene.sks in Resources */ = {isa = PBXBuildFile; fileRef = DECE11B41F2268AE0005D447 /* MyScene.sks */; };
@@ -46,6 +50,10 @@
 		DE6B4C8C1F1D209100770CAA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		DE7346D51F26B99B00AF19BA /* CartActions.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; name = CartActions.sks; path = Minetime/CartActions.sks; sourceTree = "<group>"; };
 		DE7346D71F26BE6000AF19BA /* Cart.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Cart.swift; sourceTree = "<group>"; };
+		DE7346DB1F27D74800AF19BA /* CatchItem.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CatchItem.swift; sourceTree = "<group>"; };
+		DE7346DD1F27E9D100AF19BA /* OreDebris1.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = OreDebris1.sks; sourceTree = "<group>"; };
+		DE7346DF1F27F54B00AF19BA /* OreDebris2.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = OreDebris2.sks; sourceTree = "<group>"; };
+		DE7346E11F292E2300AF19BA /* CartCatch.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = CartCatch.sks; sourceTree = "<group>"; };
 		DECE11B01F212A180005D447 /* DrillFire.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = DrillFire.sks; sourceTree = "<group>"; };
 		DECE11B21F214AE20005D447 /* Obstacle.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Obstacle.swift; sourceTree = "<group>"; };
 		DECE11B41F2268AE0005D447 /* MyScene.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = MyScene.sks; sourceTree = "<group>"; };
@@ -73,6 +81,9 @@
 				DECE11B01F212A180005D447 /* DrillFire.sks */,
 				DECE11B81F226CBF0005D447 /* DrillDeath.sks */,
 				DE7346D51F26B99B00AF19BA /* CartActions.sks */,
+				DE7346DD1F27E9D100AF19BA /* OreDebris1.sks */,
+				DE7346E11F292E2300AF19BA /* CartCatch.sks */,
+				DE7346DF1F27F54B00AF19BA /* OreDebris2.sks */,
 				DE1D723C1F211D200019D4FF /* Assets.xcassets */,
 				DE6B4C791F1D209100770CAA /* Minetime */,
 				DE6B4C781F1D209100770CAA /* Products */,
@@ -96,6 +107,7 @@
 				DECE11B41F2268AE0005D447 /* MyScene.sks */,
 				DE6B4C7C1F1D209100770CAA /* GameScene.sks */,
 				DECE11B21F214AE20005D447 /* Obstacle.swift */,
+				DE7346DB1F27D74800AF19BA /* CatchItem.swift */,
 				DECE11BA1F255C530005D447 /* CGFloat+Extensions.swift */,
 				DE6B4C7E1F1D209100770CAA /* Actions.sks */,
 				DE6B4C801F1D209100770CAA /* GameScene.swift */,
@@ -178,8 +190,11 @@
 				DE1D72381F1FDE550019D4FF /* DrillActions.sks in Resources */,
 				DE6B4C8B1F1D209100770CAA /* LaunchScreen.storyboard in Resources */,
 				DE1D723D1F211D200019D4FF /* DrillDebris.sks in Resources */,
+				DE7346E21F292E2400AF19BA /* CartCatch.sks in Resources */,
 				DE1D723E1F211D200019D4FF /* Assets.xcassets in Resources */,
 				DECE11BF1F25D3050005D447 /* VCR_OSD_MONO_1.001.ttf in Resources */,
+				DE7346E01F27F54B00AF19BA /* OreDebris2.sks in Resources */,
+				DE7346DE1F27E9D100AF19BA /* OreDebris1.sks in Resources */,
 				DECE11B91F226CBF0005D447 /* DrillDeath.sks in Resources */,
 				DE6B4C7F1F1D209100770CAA /* Actions.sks in Resources */,
 			);
@@ -196,6 +211,7 @@
 				DE1D72361F1FDC1F0019D4FF /* Drill.swift in Sources */,
 				DECE11B31F214AE20005D447 /* Obstacle.swift in Sources */,
 				DE7346D81F26BE6000AF19BA /* Cart.swift in Sources */,
+				DE7346DC1F27D74800AF19BA /* CatchItem.swift in Sources */,
 				DE6B4C831F1D209100770CAA /* GameViewController.swift in Sources */,
 				DECE11BB1F255C530005D447 /* CGFloat+Extensions.swift in Sources */,
 				DE6B4C7B1F1D209100770CAA /* AppDelegate.swift in Sources */,

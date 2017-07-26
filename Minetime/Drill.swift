@@ -20,6 +20,7 @@ class Drill: SKSpriteNode {
     var drillSideDebris: SKEmitterNode!
     var drillBackDebris: SKEmitterNode!
     var drillFire: SKEmitterNode!
+    var drillPhysicsBody: SKSpriteNode!
     
     var drillBoomNode1: SKSpriteNode!
     var drillBoomNode2: SKSpriteNode!
@@ -29,22 +30,22 @@ class Drill: SKSpriteNode {
     var drillSmoke: SKEmitterNode!
     
     /* Drill movement actions */
-    let moveDownAction: SKAction = SKAction.moveTo(y: -200, duration: 0.6)
+    let moveDownAction: SKAction = SKAction.moveTo(y: -200, duration: 0.65)
     let moveUpResetAction: SKAction = SKAction.move(to: CGPoint(x: 160, y: 159), duration: 0)
     
     /* You are required to implement this for your subclass to work */
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
         
-        /* Run idle animation */
-        self.run(idleAction,withKey:"idle")
-        
         /* Set up drilling effect references */
         drillBackground = self.childNode(withName: "drillBorder") as! SKSpriteNode
         drillSideDebris = self.childNode(withName: "drillDebrisSide") as! SKEmitterNode
         drillBackDebris = self.childNode(withName: "drillDebrisBack") as! SKEmitterNode
         drillFire = self.childNode(withName: "drillFire") as! SKEmitterNode
+        drillPhysicsBody = self.childNode(withName: "drillPhysicsBody") as! SKSpriteNode
         
+        /* Run idle animation */
+        drillPhysicsBody.run(idleAction)
         
         /* Set up drill death effect references */
         drillBoomNode1 = self.childNode(withName: "drillBoom1") as! SKSpriteNode
@@ -70,8 +71,9 @@ class Drill: SKSpriteNode {
         drillSmoke.isHidden = false
         
         /* Turn off idle animation */
-        self.removeAction(forKey: "idle")
+        drillPhysicsBody.removeAllActions()
         
+        /* Explosions */
         drillBoomNode1.run(deathAction)
         run(SKAction.wait(forDuration: 0.25), completion: { [unowned self] in
             self.drillBoomNode2.run(self.deathAction)
@@ -85,9 +87,11 @@ class Drill: SKSpriteNode {
         run(SKAction.wait(forDuration: 0.95), completion: { [unowned self] in
             self.drillBoomNode5.run(self.deathAction)
         })
-        
+
         run(SKAction.wait(forDuration: 1.5), completion:  { [unowned self] in
+            /* Disable collision mask */
             self.physicsBody?.collisionBitMask = 0
+            
             self.run(self.moveDownAction, completion:  { [unowned self] in
                 self.setScrollingUp()
                 self.physicsBody?.angularVelocity = 0
@@ -95,17 +99,19 @@ class Drill: SKSpriteNode {
                 self.run(self.moveUpResetAction)
             })
         })
+        
+        /* Hide drill animations */
         drillSideDebris.isHidden = true
         drillBackDebris.isHidden = true
         drillFire.isHidden = true
-    }
+        }
     
     func runDrillingAnimation(){
         /* Enable drill collisions */
         self.physicsBody?.collisionBitMask = 5
         self.physicsBody?.categoryBitMask = 1
         
-        self.run(idleAction, withKey: "idle")
+        drillPhysicsBody.run(idleAction)
         self.drillBackground.isHidden = false
         self.drillSideDebris.isHidden = false
         self.drillFire.resetSimulation()
