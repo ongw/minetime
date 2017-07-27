@@ -11,7 +11,7 @@ import GameplayKit
 
 /* Tracking enum for game state */
 enum GameState {
-    case ready, drilling, collecting, wait
+    case ready, drilling, collecting, catching, wait
 }
 
 enum direction {
@@ -29,7 +29,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var celebrateEmit: SKEmitterNode!
     
     /* Array to hold collected ore */
-    static var oreStack = [CatchItem]()
+    static var collectStack = [CatchItem]()
     
     /* Initialize physics variables */
     var velocityChange: CGFloat = 60
@@ -119,6 +119,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             /* Reset money value */
             GameScene.money = 0
+            
+            /* Reset item array */
+            GameScene.collectStack.removeAll()
         }
         
         if gameState == .drilling {
@@ -253,12 +256,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         //MARK: EndOfCollectMode
         /* Check if only the 2 starting elements remain */
         if undergroundLayer.children.count == 2 && undergroundLayer.convert(undergroundLayer.children[1].position, to: self).y <= -295{
+            self.gameState = .wait
+            
             /* Reset camera to starting position */
             cameraNode.run(moveCameraUpAction)
             cart.startCollection()
-
-            gameState = .ready
             
+            run(SKAction.wait(forDuration: 0.7), completion:  { [unowned self] in
+            self.itemLaunch()
+            })
             /* Show drill */
             //drill.isHidden = false
         }
@@ -335,26 +341,54 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                             }
                         }
                         
+                        
+                        
                         /* Show cart */
                         self.cart.isHidden = false
                     }
                     
                 })
         }
+        /* If contact between collectItem and cart */
         else if (contactA.categoryBitMask == 8 && contactB.categoryBitMask == 16) || (contactA.categoryBitMask == 16 && contactB.categoryBitMask == 8) {
+            
+            /* Hide catch item */
             if contactA.categoryBitMask == 8 {
                 contactA.node?.isHidden = true
             }
             else {
                 contactB.node?.isHidden = true
             }
+            
+            /* Emit celebration pixels */
             celebrateEmit.isHidden = false
             let newEmit = celebrateEmit.copy() as! SKEmitterNode
             cart.addChild(newEmit)
             
-            run(SKAction.wait(forDuration: 1.5), completion:  { 
-              newEmit.removeFromParent()
+            run(SKAction.wait(forDuration: 1.5), completion:  {
+                
+                /* Remove emitter */
+                newEmit.removeFromParent()
             })
+        }
+        /* Despawn ore */
+        else if (contactA.categoryBitMask == 8 && contactB.categoryBitMask == 128) || (contactA.categoryBitMask == 128 && contactB.categoryBitMask == 8) {
+            /* Hide catch item */
+            if contactA.categoryBitMask == 8 {
+                contactA.node?.isHidden = true
+                run(SKAction.wait(forDuration: 1.5), completion:  {
+                contactA.node?.removeFromParent()
+                })
+                print("DESPAWN")
+            }
+            else {
+                contactB.node?.isHidden = true
+                run(SKAction.wait(forDuration: 1.5), completion:  {
+                    contactA.node?.removeFromParent()
+                })
+                print("DESPAWN")
+            }
+            
         }
     }
     
@@ -387,7 +421,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             /* Scroll for drilling */
             scrollDrillMode()
         }
-        else if gameState != .wait{
+        else if gameState == .collecting{
             /* Scroll for collecting */
             scrollCollectMode()
         }
@@ -415,5 +449,39 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         //drill.physicsBody?.applyTorque(1)
         //drill.physicsBody?.angularVelocity = 0.05
         drill.run(moveStartAction)
+    }
+    
+    /* Launches items randomly */
+    func itemLaunch() {
+        for item in GameScene.collectStack {
+            item.physicsBody?.fieldBitMask = 0
+            item.physicsBody?.contactTestBitMask = 0
+            item.physicsBody?.affectedByGravity = true
+            self.addChild(item)
+            item.position = self.convert(CGPoint(x: 160, y: 160), to: self)
+            item.isHidden = false
+            
+            run(SKAction.wait(forDuration: Double(randomBetweenNumbers(firstNum: 0, secondNum: 0.2))), completion:  { [unowned self] in
+            item.physicsBody?.applyImpulse(CGVector(dx: self.randomBetweenNumbers(firstNum: -100, secondNum: 100), dy: 350))
+            })
+        }
+        if GameScene.collectStack.count > 0 {
+        run(SKAction.wait(forDuration: Double(randomBetweenNumbers(firstNum: 0, secondNum: 1))), completion:  { [unowned self] in
+            /* Play flashing triangles */
+            for node in self.cameraNode.children {
+                if node.name == "triangle" {
+                    node.run(SKAction(named: "FlashTriangle")!)
+                }
+            }
+        })
+        }
+        self.gameState = .catching
+    }
+
+    
+    
+    /* Returns a random float between 2 numbers */
+    func randomBetweenNumbers(firstNum: CGFloat, secondNum: CGFloat) -> CGFloat{
+        return CGFloat(arc4random()) / CGFloat(UINT32_MAX) * abs(firstNum - secondNum) + min(firstNum, secondNum)
     }
 }

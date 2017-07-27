@@ -42,10 +42,9 @@ class Drill: SKSpriteNode {
         drillSideDebris = self.childNode(withName: "drillDebrisSide") as! SKEmitterNode
         drillBackDebris = self.childNode(withName: "drillDebrisBack") as! SKEmitterNode
         drillFire = self.childNode(withName: "drillFire") as! SKEmitterNode
-        drillPhysicsBody = self.childNode(withName: "drillPhysicsBody") as! SKSpriteNode
         
         /* Run idle animation */
-        drillPhysicsBody.run(idleAction)
+        self.run(idleAction, withKey: "idle")
         
         /* Set up drill death effect references */
         drillBoomNode1 = self.childNode(withName: "drillBoom1") as! SKSpriteNode
@@ -71,7 +70,7 @@ class Drill: SKSpriteNode {
         drillSmoke.isHidden = false
         
         /* Turn off idle animation */
-        drillPhysicsBody.removeAllActions()
+        self.removeAction(forKey: "idle")
         
         /* Explosions */
         drillBoomNode1.run(deathAction)
@@ -111,7 +110,7 @@ class Drill: SKSpriteNode {
         self.physicsBody?.collisionBitMask = 5
         self.physicsBody?.categoryBitMask = 1
         
-        drillPhysicsBody.run(idleAction)
+        self.run(idleAction, withKey: "idle")
         self.drillBackground.isHidden = false
         self.drillSideDebris.isHidden = false
         self.drillFire.resetSimulation()

@@ -34,6 +34,7 @@ class CatchItem: SKSpriteNode {
         self.physicsBody?.categoryBitMask = 0
         self.physicsBody?.collisionBitMask = 0
         self.physicsBody?.fieldBitMask = 0
+        self.physicsBody?.contactTestBitMask = 0
         
         self.moneyValue = moneyValue
     }

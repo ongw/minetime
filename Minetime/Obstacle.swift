@@ -13,7 +13,7 @@ class Obstacle: SKSpriteNode {
     
     var tapCount: Int! /* Number of taps to mine */
     var moneyValue: Int! /* Money value of ore */
-    var ingot: CatchItem! /* Tapped ingot */
+    var item: CatchItem! /* Tapped item */
     var oreDebris1: SKEmitterNode = SKEmitterNode(fileNamed: "OreDebris1")!
     var oreDebris2: SKEmitterNode = SKEmitterNode(fileNamed: "OreDebris2")!
     
@@ -60,13 +60,13 @@ class Obstacle: SKSpriteNode {
         oreDebris2.zPosition = 50
         
         /* Save ingot information */
-        ingot = CatchItem(texture: ingotTexture, moneyValue: moneyValue)
-        ingot.xScale = 0.5
-        ingot.yScale = 0.6
-        ingot.zPosition = 10
-        ingot.isHidden = true
+        item = CatchItem(texture: ingotTexture, moneyValue: moneyValue)
+        item.xScale = 0.5
+        item.yScale = 0.6
+        item.zPosition = 10
+        item.isHidden = true
         
-        self.addChild(ingot)
+        self.addChild(item)
         
     }
     
@@ -93,10 +93,11 @@ class Obstacle: SKSpriteNode {
             self.tapCount! -= 1
             if self.tapCount <= 0  {
                 
-                ingot.isHidden = false
-                ingot.physicsBody?.fieldBitMask = 1
-                ingot.physicsBody?.categoryBitMask = 8
-                ingot.physicsBody?.applyImpulse(CGVector(dx: 0, dy: 300))
+                item.isHidden = false
+                item.physicsBody?.fieldBitMask = 1
+                item.physicsBody?.categoryBitMask = 8
+                item.physicsBody?.contactTestBitMask = 16
+                item.physicsBody?.applyImpulse(CGVector(dx: 0, dy: 300))
 
                 oreDebris1.isHidden = false
                 oreDebris1.resetSimulation()
@@ -104,6 +105,7 @@ class Obstacle: SKSpriteNode {
                 oreDebris2.resetSimulation()
                 
                 self.zPosition = -10
+                GameScene.collectStack.append(item)
                 GameScene.money += self.moneyValue
                 //self.removeFromParent()
             }
