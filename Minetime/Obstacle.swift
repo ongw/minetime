@@ -24,7 +24,7 @@ class Obstacle: SKSpriteNode {
     }
     
     /* You are required to implement this for your subclass to work */
-    init(texture: SKTexture, tapCount: Int, moneyValue: Int, ingotTexture: SKTexture) {
+    init(texture: SKTexture, tapCount: Int, moneyValue: Int, ingotTexture: SKTexture, debrisTexture: SKTexture) {
         super.init(texture: SKTexture(imageNamed: "empty"), color: UIColor.clear, size: CGSize(width: texture.size().width + 35, height: texture.size().height + 35))
         
         let obstacleBody: SKSpriteNode = SKSpriteNode(texture: texture, color: SKColor.clear, size: texture.size())
@@ -60,14 +60,14 @@ class Obstacle: SKSpriteNode {
         oreDebris2.zPosition = 50
         
         /* Save ingot information */
-        item = CatchItem(texture: ingotTexture, moneyValue: moneyValue)
+        item = CatchItem(texture: ingotTexture, moneyValue: moneyValue, debrisTexture: debrisTexture)
         item.xScale = 0.5
         item.yScale = 0.6
         item.zPosition = 10
         item.isHidden = true
         
         self.addChild(item)
-        
+        oreDebris1.particleTexture = debrisTexture
     }
     
     /* Returns a random float between 2 numbers */
@@ -106,7 +106,6 @@ class Obstacle: SKSpriteNode {
                 
                 self.zPosition = -10
                 GameScene.collectStack.append(item)
-                GameScene.money += self.moneyValue
                 //self.removeFromParent()
             }
         }

@@ -2,11 +2,11 @@
   "images" : [
     {
       "idiom" : "universal",
-      "filename" : "spark.png",
       "scale" : "1x"
     },
     {
       "idiom" : "universal",
+      "filename" : "thickHandWhite.png",
       "scale" : "2x"
     },
     {
