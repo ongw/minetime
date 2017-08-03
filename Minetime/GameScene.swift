@@ -11,7 +11,7 @@ import GameplayKit
 
 /* Tracking enum for game state */
 enum GameState {
-    case ready, drilling, collecting, catching, wait
+    case ready, drilling, collecting, catching, wait, inTutorial, inShop, finishRound
 }
 
 enum direction {
@@ -27,8 +27,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var drill: Drill!
     var cart: Cart!
     var celebrateEmit: SKEmitterNode!
-    var oreDebris: SKEmitterNode = SKEmitterNode(fileNamed: "OreDebris1")!
+    var oreDebris: SKEmitterNode = SKEmitterNode(fileNamed: "OreDebris")!
+    var finishBoard: SKSpriteNode!
     
+    var lastUpdateTime: CGFloat = 0.0
+    var deltaTime: CGFloat = 1.0/60.0
+    
+    var shopButton: MSButtonNode!
+    var backButton: MSButtonNode!
+    
+    static var tapPower: Int = 1
+
+    var lastDrillTrailPosition: CGPoint = CGPoint(x: 160, y: 120)
+    
+    /* User Default Objects */
+    var tutorialPlayed: Bool {
+        get {
+            return UserDefaults.standard.bool(forKey: "tutorialPlayed")
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "tutorialPlayed")
+        }
+    }
     /* Array to hold collected ore */
     static var collectStack = [CatchItem]()
     var collectCount: Int = 0
@@ -37,11 +57,44 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var velocityChange: CGFloat = 60
     var positionChange: CGFloat = 1
     
-    /* Label/var to track money */
-    static var moneyLabel: SKLabelNode!
-    static var money: Int = 0 {
+    /* Label/var to track total money */
+    static var totalMoneyLabel: SKLabelNode!
+    static var totalMoney: Int {
+        get {
+            return UserDefaults.standard.integer(forKey: "totalMoney")
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "totalMoney")
+            GameScene.totalMoneyLabel.text = "$\(String(GameScene.totalMoney))"
+        }
+
+    }
+    
+    /* Label/var to track current round money */
+    static var currentMoneyLabel: SKLabelNode!
+    static var currentMoney: Int = 0 {
         didSet {
-            GameScene.moneyLabel.text = "$\(String(GameScene.money))"
+            GameScene.currentMoneyLabel.text = "$\(String(GameScene.currentMoney))"
+        }
+    }
+    
+    /* Label/var to track current round money */
+    static var depthLabel: SKLabelNode!
+    static var depth: Int = 0 {
+        didSet {
+            GameScene.depthLabel.text = "\(String(GameScene.depth))m"
+        }
+    }
+    
+    /* Label/var to track best run */
+    static var bestRunLabel: SKLabelNode!
+    static var bestRun: Int{
+        get {
+            return UserDefaults.standard.integer(forKey: "bestRun")
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "bestRun")
+            GameScene.bestRunLabel.text = "$\(String(GameScene.bestRun))"
         }
     }
     
@@ -54,13 +107,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var segmentStack = [SKNode]()
     
     /* Initiliaize game state */
-    var gameState: GameState = .ready
+    static var gameState: GameState = .ready
     var drillDirection: direction = .middle
     
     /* Initialize camera elements */
     var cameraNode: SKCameraNode!
     let moveCameraDownAction: SKAction = SKAction.init(named: "MoveCameraDown")!
     let moveCameraUpAction: SKAction = SKAction.init(named: "MoveCameraUp")!
+    let moveCameraRightAction: SKAction = SKAction.init(named: "MoveCameraRight")!
     
     /* Drill action to derotate */
     let drillDerotateAction: SKAction = SKAction.init(named: "DrillDerotate")!
@@ -94,49 +148,123 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         /* Disable multitouch */
         self.view?.isMultipleTouchEnabled = false
         
-        /* Set up money label */
-        GameScene.moneyLabel = childNode(withName: "//moneyLabel") as! SKLabelNode
+        /* Set up total money label */
+        GameScene.totalMoneyLabel = cameraNode.childNode(withName: "totalMoneyLabel") as! SKLabelNode
+        GameScene.totalMoneyLabel.text = "$\(String(GameScene.totalMoney))"
+        
+        /* Set up current money label */
+        GameScene.currentMoneyLabel = childNode(withName: "//earnedMoneyLabel") as! SKLabelNode
+        
+        /* Set up best run money label */
+        GameScene.bestRunLabel = childNode(withName: "//bestRunLabel") as! SKLabelNode
+        GameScene.bestRunLabel.text = "$\(String(GameScene.bestRun))"
+        
+        /* Set up depth label */
+        GameScene.depthLabel = cameraNode.childNode(withName: "depthLabel") as! SKLabelNode
         
         /* Set up cart celebrate emit */
         celebrateEmit = cart.childNode(withName: "celebrate") as! SKEmitterNode
         celebrateEmit.isHidden = true
+        
+        //MARK: ResetTutorial
+        resetTutorial()
+        resetValues()
+        
+        /* Set up button references */
+        shopButton = self.childNode(withName: "shopButton") as! MSButtonNode
+        backButton = self.childNode(withName: "backButton") as! MSButtonNode
+        
+        /* Set shop button handler */
+        shopButton.selectedHandler = {
+            if GameScene.gameState == .ready {
+            GameScene.gameState = .wait
+                self.cameraNode.run(self.moveCameraRightAction)
+                self.run(SKAction.wait(forDuration: 0.5), completion:  {
+                    GameScene.gameState = .inShop
+                })
+            }
+        }
+        
+        /* Set shop button handler */
+        backButton.selectedHandler = {
+            if GameScene.gameState == .inShop {
+                GameScene.gameState = .wait
+            self.cameraNode.run(self.moveCameraUpAction)
+            self.run(SKAction.wait(forDuration: 0.5), completion:  {
+            GameScene.gameState = .ready
+            })
+            }
+        }
+        }
     
-    }
     
     //MARK: StartOfDrillMode
     /* Called when touch is made */
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if gameState == .ready {
+        
+        if GameScene.gameState == .finishRound {
+            /* Bring results board up */
+            childNode(withName: "finishBoard")?.run(SKAction(named: "MoveBoardUp")!, completion: {
+                
+                if GameScene.gameState != .drilling {
+                    /* Enable game start */
+                    GameScene.gameState = .ready
+                }
+            })
+            
+            /* Show shop sign */
+            shopButton.isHidden = false
+            shopButton.run(SKAction(named: "MoveSignUp")!)
+            
+            /* Remove all drill trails */
+            for node in undergroundLayer.children[0].children {
+                if (node as! SKSpriteNode).zPosition == -2 {
+                    node.removeFromParent()
+                }
+            }
+            for node in undergroundLayer.children[1].children {
+                if (node as! SKSpriteNode).zPosition == -2 {
+                    node.removeFromParent()
+                }
+            }
+        }
+        else if GameScene.gameState == .ready {
+            /* Set to drilling game state */
+            GameScene.gameState = .drilling
+            
             /* Move camera down to center drill */
             cameraNode.run(moveCameraDownAction, completion: { [unowned self] in
                 self.drill.runDrillingAnimation()
+                
+                /* Hide shop sign */
+                self.shopButton.isHidden = true
+                self.shopButton.run(SKAction(named: "MoveSignDown")!)
             })
-
-            /* Hide cart */
-            cart.isHidden = true
-            cart.reset()
             
-            /* Show drill */
-            drill.isHidden = false
+            //MARK: Tutorial
+            /* Play hand tutorial triangles */
+            if !tutorialPlayed {
+            cameraNode.childNode(withName: "moveHand")?.run(SKAction(named: "MoveHand")!)
+            }
             
-            /* Set to drilling game state */
-            gameState = .drilling
-            
-//            /* Reset money value */
-//            GameScene.money = 0
+            /* Reset money value */
+            GameScene.currentMoney = 0
             
             /* Reset count tracker */
             collectCount = 0
             
             /* Reset item array */
             GameScene.collectStack.removeAll()
+            
+            /* Reset last drill position */
+            lastDrillTrailPosition = CGPoint(x: 160, y: self.convert(drill.position, to: undergroundLayer).y - 40)
         }
         
-        if gameState == .drilling {
+        if GameScene.gameState == .drilling {
             /* Trigger drill movement */
             setDrillMovement(touch: touches.first!)
         }
-        else if gameState == .catching {
+        else if GameScene.gameState == .catching {
             //setCartMovement(touch: touches.first!)
             cartStartTouch = touches.first!.location(in: cameraNode)
             lastCartPosition = cart.position
@@ -145,11 +273,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     /* Called when existing touch is moved */
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if gameState == .drilling {
+        if GameScene.gameState == .drilling {
             /* Trigger drill movement */
             setDrillMovement(touch: touches.first!)
         }
-        else if gameState == .catching {
+        else if GameScene.gameState == .catching {
             var newPosition = lastCartPosition.x + (touches.first!.location(in: cameraNode).x - cartStartTouch.x)
             if newPosition < -125 {
                 newPosition = -125
@@ -173,7 +301,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         /* Cancel rotation */
         drill.physicsBody?.angularVelocity = 0
         
-        if gameState != .wait {
+        if GameScene.gameState != .wait {
             /* Derotate drill (unless collision) */
             drill.run(drillDerotateAction)
         }
@@ -205,10 +333,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func scrollDrillMode() {
         /* Scroll for drilling */
         if drillDirection == .left || drillDirection == .right {
-            undergroundLayer.position.y += 1.7
+            undergroundLayer.position.y += 1.7 * deltaTime * 60
         }
         else {
-            undergroundLayer.position.y += 2
+            undergroundLayer.position.y += 2 * deltaTime * 60
         }
         
         /* Get position of latest ground segment in undergroundLayer */
@@ -229,7 +357,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             //MARK: SpawnObstacles
             /* Spawn copper obstacles */
-            spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 3, spawnMax: 5, texture: SKTexture(imageNamed: "copperOre"), ingotTexture: SKTexture(imageNamed: "copperIngot"), debrisTexture: SKTexture(imageNamed: "oreDebris2"))
+            spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 3, spawnMax: 5, texture: SKTexture(imageNamed: "copperOre1"), ingotTexture: SKTexture(imageNamed: "copperIngot"), debrisTexture: SKTexture(imageNamed: "copperDebris"), tapCount: 2, moneyValue: 3, crackTexture: SKTexture(imageNamed: "copper1Crack"))
             
             /* Add to main underground layer */
             undergroundLayer.addChild(newUndergroundSegment)
@@ -248,12 +376,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     
-    
-    
     /* Scrolling for collection mode */
     func scrollCollectMode() {
         /* Scroll background downwards */
-        undergroundLayer.position.y -= 9
+        undergroundLayer.position.y -= 6 * deltaTime * 60
         
         /* Get position of topmost ground segment in undergroundLayer */
         let undergroundOld = undergroundLayer.convert(undergroundLayer.children[0].position, to: self)
@@ -282,10 +408,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             undergroundLayer.children[undergroundLayer.children.count - 1].removeFromParent()
         }
         
-        //MARK: EndOfCollectMode
+        //MARK: EndOfCollectMode/StartOfCatchMode
         /* Check if only the 2 starting elements remain */
         if undergroundLayer.children.count == 2 && undergroundLayer.convert(undergroundLayer.children[1].position, to: self).y <= -295{
-            self.gameState = .wait
+            GameScene.gameState = .wait
             
             /* Reset camera to starting position */
             cameraNode.run(moveCameraUpAction)
@@ -300,12 +426,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     /* Spawn obstacles for given segment input */
-    func spawnObstacles(groundSegment: SKNode, spawnMin: Int, spawnMax: Int, texture: SKTexture, ingotTexture: SKTexture, debrisTexture: SKTexture){
+    func spawnObstacles(groundSegment: SKNode, spawnMin: Int, spawnMax: Int, texture: SKTexture, ingotTexture: SKTexture, debrisTexture: SKTexture, tapCount: Int, moneyValue: Int, crackTexture: SKTexture){
         /* Spawn random number of obstacles within constraints */
         for _ in 1 ... Int(arc4random_uniform(UInt32(spawnMax - spawnMin))) + spawnMin {
             
             /* Declare new obstacle object */
-            let newObstacle = Obstacle(texture: texture, tapCount: 1, moneyValue: 3, ingotTexture: ingotTexture, debrisTexture: debrisTexture)
+            let newObstacle = Obstacle(texture: texture, tapCount: tapCount, moneyValue: moneyValue, ingotTexture: ingotTexture, debrisTexture: debrisTexture, crackTexture: crackTexture)
             
             /* Randomize obstacle position */
             newObstacle.position = groundSegment.convert(CGPoint(x: Double(arc4random_uniform(UInt32(280)) + 20), y: Double(arc4random_uniform(UInt32(280))) + 20), to: groundSegment)
@@ -325,7 +451,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         /* Check if one of the contact nodes is the drill */
         if contactA.categoryBitMask == 1 || contactB.categoryBitMask == 1 {
             /* Disable drill movement from touch input */
-            self.gameState = .wait
+            GameScene.gameState = .wait
             self.drillDirection = .middle
             
             /* Stop current drill movement */
@@ -347,13 +473,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
             
             run(SKAction.wait(forDuration: 1.5), completion:  { [unowned self] in
-                if self.gameState != .ready {
+                if GameScene.gameState != .ready {
                     
+                    if !self.tutorialPlayed {
+                        //MARK: Tutorial
+                        GameScene.gameState = .inTutorial
+                    }
+                    else {
                     /* Enable collecting state */
-                    self.gameState = .collecting
+                    GameScene.gameState = .collecting
+                    }
                     
-                    /* Enable all nodes in segment stack to be mined */
-                    for segment in self.segmentStack {
+                    /* Enable all nodes in underground to be mined */
+                    for segment in self.undergroundLayer.children {
                         for node in segment.children {
                             if String(describing: type(of: node)) == "Obstacle" {
                                 (node as! Obstacle).setMiningEnabled()
@@ -362,7 +494,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     }
                     
                     /* Enable all nodes in segment stack to be mined */
-                    for segment in self.undergroundLayer.children {
+                    for segment in self.segmentStack {
                         for node in segment.children {
                             if String(describing: type(of: node)) == "Obstacle" {
                                 (node as! Obstacle).setMiningEnabled()
@@ -386,8 +518,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     contactA.node?.isHidden = true
                     
                     /* Increment money */
-                    if gameState == .catching {
-                        GameScene.money += (contactA.node as! CatchItem).moneyValue
+                    if GameScene.gameState == .catching {
+                        GameScene.totalMoney += (contactA.node as! CatchItem).moneyValue
+                        GameScene.currentMoney += (contactA.node as! CatchItem).moneyValue
                         collectCount += 1
                     }
                     
@@ -417,8 +550,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     contactB.node?.isHidden = true
                     
                     /* Increment money */
-                    if gameState == .catching {
-                        GameScene.money += (contactB.node as! CatchItem).moneyValue
+                    if GameScene.gameState == .catching {
+                        GameScene.totalMoney += (contactB.node as! CatchItem).moneyValue
+                        GameScene.currentMoney += (contactB.node as! CatchItem).moneyValue
                         collectCount += 1
                     }
                     
@@ -444,9 +578,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             if self.collectCount >= GameScene.collectStack.count {
                 run(SKAction.wait(forDuration: 0.5), completion:  { [unowned self] in
-                    if self.gameState != .drilling {
-                        //MARK: TestingCatch
-                        self.gameState = .ready
+                    if GameScene.gameState != .drilling {
+                        //MARK: EndOfCatchMode
+                        self.runFinish()
                     }
                     self.cart.physicsBody?.velocity.dx = 0
                 })
@@ -530,9 +664,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             if self.collectCount == GameScene.collectStack.count {
                 run(SKAction.wait(forDuration: 0.5), completion:  { [unowned self] in
-                    if self.gameState != .drilling {
-                        //MARK: TestingCatch
-                       self.gameState = .ready
+                    if GameScene.gameState != .drilling {
+                        //MARK: EndOfCatchMode
+                       self.runFinish()
+                        
                     }
                     self.cart.physicsBody?.velocity.dx = 0
                 })
@@ -543,15 +678,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /* Called for every instance of a frame */
     override func update(_ currentTime: TimeInterval) {
         
-        //        print("COLLECT:\(collectCount)")
-        //        print("STACK: \(GameScene.collectStack.count)")
+        /* Update delta */
+        deltaTime = CGFloat(currentTime) - lastUpdateTime
+        lastUpdateTime = CGFloat(currentTime)
+        
+        print(undergroundLayer.convert(cameraNode.position, to: self).y/10)
+        GameScene.depth = Int(undergroundLayer.convert(cameraNode.position, to: self).y/15 - 28)
+        
         /* Clamp veolcity in y */
         drill.physicsBody?.velocity.dy = 0
         drill.position.y = 160
         drill.zRotation.clamp(v1: CGFloat(-15).degreesToRadians(), CGFloat(15).degreesToRadians())
         
         /* Called before each frame is rendered */
-        if gameState == .ready {
+        if GameScene.gameState == .ready {
             return
         }
         
@@ -568,14 +708,37 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             drill.physicsBody?.angularVelocity = 0
         }
         
-        if gameState == .drilling {
+        if GameScene.gameState == .drilling {
             /* Scroll for drilling */
             scrollDrillMode()
+            
+            //MARK: DrillTrail
+            let currentDrillTrailPosition = self.convert(drill.position, to: undergroundLayer)
+            if currentDrillTrailPosition.y - lastDrillTrailPosition.y <= -15 {
+                lastDrillTrailPosition = currentDrillTrailPosition
+                var drillTrail: SKSpriteNode
+                if randomBetweenNumbers(firstNum: 0, secondNum: 1) < 0.5 {
+                    drillTrail = SKSpriteNode(texture: SKTexture(imageNamed: "drillTrail1"), color: UIColor.clear, size: CGSize(width: 50, height: 80))
+                }
+                else {
+                    drillTrail = SKSpriteNode(texture: SKTexture(imageNamed: "drillTrail2"), color: UIColor.clear, size: CGSize(width: 50, height: 80))
+                }
+                
+                if randomBetweenNumbers(firstNum: 0, secondNum: 1) < 0.5 {
+                drillTrail.xScale = -1
+                }
+                
+                drillTrail.position = self.convert(drill.position, to: getDrillTrailSegment())
+                drillTrail.zPosition = -2
+                getDrillTrailSegment().addChild(drillTrail)
+            }
         }
-        else if gameState == .collecting{
+        else if GameScene.gameState == .collecting{
             /* Scroll for collecting */
             scrollCollectMode()
         }
+        
+        
     }
     
     /* Drill movement left */
@@ -609,7 +772,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             item.physicsBody?.contactTestBitMask = 128
             item.physicsBody?.affectedByGravity = true
             self.addChild(item)
-            item.position = self.convert(CGPoint(x: 160, y: 162 ), to: self)
+            item.position = self.convert(CGPoint(x: 160, y: 162), to: self)
             item.isHidden = false
             
             run(SKAction.wait(forDuration: Double(randomBetweenNumbers(firstNum: 0, secondNum: 0.2))), completion:  { [unowned self] in
@@ -624,42 +787,109 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                         node.run(SKAction(named: "FlashTriangle")!)
                     }
                 }
+                self.run(SKAction.wait(forDuration: 1.3), completion:  { [unowned self] in
+                    //MARK: Tutorial
+                    if !self.tutorialPlayed {
+                    /* Play hand tutorial triangles */
+                     self.cameraNode.childNode(withName: "moveHand")?.run(SKAction(named: "MoveHand")!)
+                    UserDefaults.standard.set(true, forKey: "tutorialPlayed")
+                    self.tutorialPlayed = true
+                    }
+                })
                 self.run(SKAction.wait(forDuration: 2.1), completion:  { [unowned self] in
                     self.itemDrop()
                 })
             })
-            self.run(SKAction.wait(forDuration: 0.6), completion:  { [unowned self] in
-                self.gameState = .catching
+            self.run(SKAction.wait(forDuration: 0.6), completion:  {
+                GameScene.gameState = .catching
             })
         }
         else {
-            //MARK: TestingCatch
-            self.gameState = .ready
+            //MARK: EndOfCatchMode
+            runFinish()
         }
     }
     
     func itemDrop() {
+        
+        /* Distance between spawned itens */
         var itemDistance: CGFloat = 0
+        
         for item in GameScene.collectStack {
+            
+            /* Set physics characteristics */
             item.physicsBody?.affectedByGravity = false
             item.physicsBody?.fieldBitMask = 0
             item.physicsBody?.contactTestBitMask = 112
             item.physicsBody?.collisionBitMask = 96
-            
             item.physicsBody?.angularVelocity = 0
             item.zRotation = 0
-            item.physicsBody?.velocity.dy = -300
-            //item.physicsBody?.applyForce(CGVector(dx:0, dy:-3))
+            item.physicsBody?.velocity.dy = -350
             
+            /* Randomize x position */
             item.position = self.convert(CGPoint(x: randomBetweenNumbers(firstNum: 20, secondNum: 300), y: 600 + itemDistance), to: self)
+            
             item.isHidden = false
             self.addChild(item)
-            itemDistance += 300
+            
+            /* Increment spawns with a randomized distance */
+            itemDistance += 200 + randomBetweenNumbers(firstNum: 1, secondNum: 100)
         }
     }
     
     /* Returns a random float between 2 numbers */
     func randomBetweenNumbers(firstNum: CGFloat, secondNum: CGFloat) -> CGFloat{
         return CGFloat(arc4random()) / CGFloat(UINT32_MAX) * abs(firstNum - secondNum) + min(firstNum, secondNum)
+    }
+    
+    func runFinish() {
+        GameScene.gameState = .wait
+        
+        /* Bring results board down */
+        childNode(withName: "finishBoard")?.run(SKAction(named: "MoveBoardDown")!, completion: { [unowned self] in
+            
+            /* Hide cart */
+            self.cart.isHidden = true
+            self.cart.reset()
+            
+            /* Show drill */
+            self.drill.isHidden = false
+            
+            GameScene.gameState = .finishRound
+        })
+
+        
+        if GameScene.currentMoney > GameScene.bestRun {
+            GameScene.bestRun = GameScene.currentMoney
+        }
+    }
+    
+    func resetTutorial() {
+        /* Sets the bool value for the key "highscore" to be equal to false */
+        UserDefaults.standard.set(false, forKey: "tutorialPlayed")
+        /* Synchronizes the NSUserDefaults */
+        UserDefaults.standard.synchronize()
+        tutorialPlayed = false
+    }
+    
+    func getDrillTrailSegment() -> SKNode {
+        let undergroundOld = undergroundLayer.convert(undergroundLayer.children[0].position, to: self)
+        
+        if undergroundOld.y >= 150 {
+            return undergroundLayer.children[1]
+        }
+        
+        return undergroundLayer.children[0]
+    }
+    
+    func resetValues() {
+        /* Sets the bool value for the key "bestRun" and "totalMoney" to be equal to false */
+        UserDefaults.standard.set(0, forKey: "bestRun")
+        UserDefaults.standard.set(0, forKey: "totalMoney")
+        /* Synchronizes the NSUserDefaults */
+        UserDefaults.standard.synchronize()
+        
+        GameScene.bestRun = 0
+        GameScene.totalMoney = 0
     }
 }

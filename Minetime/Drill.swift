@@ -43,8 +43,8 @@ class Drill: SKSpriteNode {
         drillBackDebris = self.childNode(withName: "drillDebrisBack") as! SKEmitterNode
         drillFire = self.childNode(withName: "drillFire") as! SKEmitterNode
         
-        /* Run idle animation */
-        self.run(idleAction, withKey: "idle")
+        drillBackground.run(SKAction(named: "IdleDrillBorder")!)
+        
         
         /* Set up drill death effect references */
         drillBoomNode1 = self.childNode(withName: "drillBoom1") as! SKSpriteNode
@@ -91,12 +91,24 @@ class Drill: SKSpriteNode {
             /* Disable collision mask */
             self.physicsBody?.collisionBitMask = 0
             
-            self.run(self.moveDownAction, completion:  { [unowned self] in
-                self.setScrollingUp()
-                self.physicsBody?.angularVelocity = 0
-                self.zRotation = CGFloat(0).degreesToRadians()
-                self.run(self.moveUpResetAction)
-            })
+            if GameScene.gameState == .inTutorial {
+                self.run(SKAction.fadeOut(withDuration: 0.5), completion:  { [unowned self] in
+                    self.setScrollingUp()
+                    self.alpha = 1
+                    self.physicsBody?.angularVelocity = 0
+                    self.zRotation = CGFloat(0).degreesToRadians()
+                    self.run(self.moveUpResetAction)
+                })
+
+            }
+            else {
+                self.run(self.moveDownAction, completion:  { [unowned self] in
+                    self.setScrollingUp()
+                    self.physicsBody?.angularVelocity = 0
+                    self.zRotation = CGFloat(0).degreesToRadians()
+                    self.run(self.moveUpResetAction)
+                })
+            }
         })
         
         /* Hide drill animations */

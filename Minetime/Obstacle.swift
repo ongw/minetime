@@ -14,8 +14,9 @@ class Obstacle: SKSpriteNode {
     var tapCount: Int! /* Number of taps to mine */
     var moneyValue: Int! /* Money value of ore */
     var item: CatchItem! /* Tapped item */
-    var oreDebris1: SKEmitterNode = SKEmitterNode(fileNamed: "OreDebris1")!
-    var oreDebris2: SKEmitterNode = SKEmitterNode(fileNamed: "OreDebris2")!
+    var oreDebris: SKEmitterNode = SKEmitterNode(fileNamed: "OreDebris")!
+    var rockDebris: SKEmitterNode = SKEmitterNode(fileNamed: "RockDebris")!
+    var cracks: SKSpriteNode!
     
     
     /* You are required to implement this for your subclass to work */
@@ -24,20 +25,21 @@ class Obstacle: SKSpriteNode {
     }
     
     /* You are required to implement this for your subclass to work */
-    init(texture: SKTexture, tapCount: Int, moneyValue: Int, ingotTexture: SKTexture, debrisTexture: SKTexture) {
+    init(texture: SKTexture, tapCount: Int, moneyValue: Int, ingotTexture: SKTexture, debrisTexture: SKTexture, crackTexture: SKTexture) {
         super.init(texture: SKTexture(imageNamed: "empty"), color: UIColor.clear, size: CGSize(width: texture.size().width + 35, height: texture.size().height + 35))
         
         let obstacleBody: SKSpriteNode = SKSpriteNode(texture: texture, color: SKColor.clear, size: texture.size())
         
         /* Set obstacle size variation */
-        obstacleBody.setScale(randomBetweenNumbers(firstNum: 1, secondNum: 1.5))
+        let randomScale = randomBetweenNumbers(firstNum: 1, secondNum: 1.5)
+        obstacleBody.setScale(randomScale)
         
         /* Set up physics behaviour */
         obstacleBody.physicsBody = SKPhysicsBody(circleOfRadius: texture.size().width/2-7)
         obstacleBody.physicsBody?.affectedByGravity = false
         obstacleBody.physicsBody?.allowsRotation = false
         obstacleBody.zPosition = 3
-        obstacleBody.physicsBody?.mass = 1700
+        obstacleBody.physicsBody?.mass = 3000
         /* Set up physics masks */
         obstacleBody.physicsBody?.categoryBitMask = 2
         obstacleBody.physicsBody?.collisionBitMask = 1
@@ -51,13 +53,19 @@ class Obstacle: SKSpriteNode {
         self.moneyValue = moneyValue
         
         /* Add and hide ore debris animation */
-        self.addChild(oreDebris1)
-        oreDebris1.isHidden = true
-        oreDebris1.zPosition = 50
+        self.addChild(oreDebris)
+        oreDebris.isHidden = true
+        oreDebris.zPosition = 50
         
-        self.addChild(oreDebris2)
-        oreDebris2.isHidden = true
-        oreDebris2.zPosition = 50
+        self.addChild(rockDebris)
+        rockDebris.isHidden = true
+        rockDebris.zPosition = 1
+        
+        cracks = SKSpriteNode(texture: crackTexture, color: UIColor.clear, size: crackTexture.size())
+        cracks.zPosition = 4
+        cracks.setScale(randomScale)
+        cracks.isHidden = true
+        self.addChild(cracks)
         
         /* Save ingot information */
         item = CatchItem(texture: ingotTexture, moneyValue: moneyValue, debrisTexture: debrisTexture)
@@ -67,7 +75,7 @@ class Obstacle: SKSpriteNode {
         item.isHidden = true
         
         self.addChild(item)
-        oreDebris1.particleTexture = debrisTexture
+        oreDebris.particleTexture = debrisTexture
     }
     
     /* Returns a random float between 2 numbers */
@@ -90,7 +98,7 @@ class Obstacle: SKSpriteNode {
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         if self.tapCount > 0 {
-            self.tapCount! -= 1
+            self.tapCount! -= GameScene.tapPower
             if self.tapCount <= 0  {
                 
                 item.isHidden = false
@@ -99,15 +107,35 @@ class Obstacle: SKSpriteNode {
                 item.physicsBody?.contactTestBitMask = 16
                 item.physicsBody?.applyImpulse(CGVector(dx: 0, dy: 300))
 
-                oreDebris1.isHidden = false
-                oreDebris1.resetSimulation()
-                oreDebris2.isHidden = false
-                oreDebris2.resetSimulation()
+                oreDebris.isHidden = false
+                oreDebris.resetSimulation()
+                
+                rockDebris.isHidden = false
+                rockDebris.particleScale = 0.5
+                rockDebris.particleSpeed = 50
+                rockDebris.particleLifetime = 0.5
+                rockDebris.resetSimulation()
                 
                 self.zPosition = -10
                 GameScene.collectStack.append(item)
+                
+                if GameScene.gameState == .inTutorial {
+                    GameScene.gameState = .collecting
+                }
                 //self.removeFromParent()
+            }
+            else {
+                cracks.isHidden = false
+                
+                self.run(SKAction(named: "OreShake")!)
+                rockDebris.isHidden = false
+                rockDebris.particleScale = 0.25
+                rockDebris.particleSpeed = 100
+                rockDebris.particleLifetime = 0.3
+                rockDebris.resetSimulation()
+                
             }
         }
     }
+    
 }
