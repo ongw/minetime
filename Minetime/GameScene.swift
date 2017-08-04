@@ -18,6 +18,10 @@ enum direction {
     case middle, left, right
 }
 
+enum upgrade {
+    case fuel
+}
+
 class GameScene: SKScene, SKPhysicsContactDelegate {
     
     /* Initiliaze game elements */
@@ -30,13 +34,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var oreDebris: SKEmitterNode = SKEmitterNode(fileNamed: "OreDebris")!
     var finishBoard: SKSpriteNode!
     
-    var lastUpdateTime: CGFloat = 0.0
-    var deltaTime: CGFloat = 1.0/60.0
-    
+    /* Initialize buttons */
     var shopButton: MSButtonNode!
     var backButton: MSButtonNode!
     
+    /* Initialize upgrade elements */
     static var tapPower: Int = 1
+    var maxDepth: Int = 100
+    var fuelBar: SKSpriteNode!
+    var fuelBarOutline: SKSpriteNode!
+    var hasFuel: Bool = true
+    
+    /* Initialize pause elements */
+    static var pause: SKSpriteNode!
+    static var paused = false {
+        didSet {
+            if paused {
+                GameScene.pause.isHidden = false
+            }
+            else {
+                GameScene.pause.isHidden = true
+            }
+            
+        }
+    }
 
     var lastDrillTrailPosition: CGPoint = CGPoint(x: 160, y: 120)
     
@@ -58,43 +79,48 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var positionChange: CGFloat = 1
     
     /* Label/var to track total money */
-    static var totalMoneyLabel: SKLabelNode!
-    static var totalMoney: Int {
+    var totalMoneyLabel: SKLabelNode!
+    var totalMoney: Int {
         get {
             return UserDefaults.standard.integer(forKey: "totalMoney")
         }
         set {
             UserDefaults.standard.set(newValue, forKey: "totalMoney")
-            GameScene.totalMoneyLabel.text = "$\(String(GameScene.totalMoney))"
+            
+            /* Update label */
+            self.totalMoneyLabel.text = "$\(String(self.totalMoney))"
         }
 
     }
     
     /* Label/var to track current round money */
-    static var currentMoneyLabel: SKLabelNode!
-    static var currentMoney: Int = 0 {
+    var currentMoneyLabel: SKLabelNode!
+    var currentMoney: Int = 0 {
         didSet {
-            GameScene.currentMoneyLabel.text = "$\(String(GameScene.currentMoney))"
+            /* Update label */
+            self.currentMoneyLabel.text = "$\(String(self.currentMoney))"
         }
     }
     
     /* Label/var to track current round money */
-    static var depthLabel: SKLabelNode!
-    static var depth: Int = 0 {
+    var depthLabel: SKLabelNode!
+    var depth: Int = 0 {
         didSet {
-            GameScene.depthLabel.text = "\(String(GameScene.depth))m"
+            /* Update label */
+            self.depthLabel.text = "\(String(self.depth))m"
         }
     }
     
     /* Label/var to track best run */
-    static var bestRunLabel: SKLabelNode!
-    static var bestRun: Int{
+    var bestRunLabel: SKLabelNode!
+    var bestRun: Int{
         get {
             return UserDefaults.standard.integer(forKey: "bestRun")
         }
         set {
             UserDefaults.standard.set(newValue, forKey: "bestRun")
-            GameScene.bestRunLabel.text = "$\(String(GameScene.bestRun))"
+            /* Update label */
+            self.bestRunLabel.text = "$\(String(self.bestRun))"
         }
     }
     
@@ -149,22 +175,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.view?.isMultipleTouchEnabled = false
         
         /* Set up total money label */
-        GameScene.totalMoneyLabel = cameraNode.childNode(withName: "totalMoneyLabel") as! SKLabelNode
-        GameScene.totalMoneyLabel.text = "$\(String(GameScene.totalMoney))"
+        self.totalMoneyLabel = cameraNode.childNode(withName: "totalMoneyLabel") as! SKLabelNode
+        self.totalMoneyLabel.text = "$\(String(totalMoney))"
         
         /* Set up current money label */
-        GameScene.currentMoneyLabel = childNode(withName: "//earnedMoneyLabel") as! SKLabelNode
+        self.currentMoneyLabel = childNode(withName: "//earnedMoneyLabel") as! SKLabelNode
         
         /* Set up best run money label */
-        GameScene.bestRunLabel = childNode(withName: "//bestRunLabel") as! SKLabelNode
-        GameScene.bestRunLabel.text = "$\(String(GameScene.bestRun))"
+        bestRunLabel = childNode(withName: "//bestRunLabel") as! SKLabelNode
+        bestRunLabel.text = "$\(String(bestRun))"
         
         /* Set up depth label */
-        GameScene.depthLabel = cameraNode.childNode(withName: "depthLabel") as! SKLabelNode
+        self.depthLabel = cameraNode.childNode(withName: "depthLabel") as! SKLabelNode
+        
+        /* Set up fuel bar */
+        fuelBar = cameraNode.childNode(withName: "fuelBar") as! SKSpriteNode
+        fuelBarOutline = cameraNode.childNode(withName: "fuelBarOutline") as! SKSpriteNode
         
         /* Set up cart celebrate emit */
         celebrateEmit = cart.childNode(withName: "celebrate") as! SKEmitterNode
         celebrateEmit.isHidden = true
+        
+        /* Set up pause state*/
+        GameScene.pause = cameraNode.childNode(withName: "pause") as! SKSpriteNode
+        GameScene.pause.isHidden = true
         
         //MARK: ResetTutorial
         resetTutorial()
@@ -178,7 +212,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         shopButton.selectedHandler = {
             if GameScene.gameState == .ready {
             GameScene.gameState = .wait
+                
                 self.cameraNode.run(self.moveCameraRightAction)
+                
+                /* Hide indicators */
+                self.depthLabel.isHidden = true
+                self.fuelBar.isHidden = true
+                self.fuelBarOutline.isHidden = true
+                
                 self.run(SKAction.wait(forDuration: 0.5), completion:  {
                     GameScene.gameState = .inShop
                 })
@@ -190,7 +231,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             if GameScene.gameState == .inShop {
                 GameScene.gameState = .wait
             self.cameraNode.run(self.moveCameraUpAction)
+                
             self.run(SKAction.wait(forDuration: 0.5), completion:  {
+                
+                /* Show indicators */
+                self.depthLabel.isHidden = false
+                self.fuelBar.isHidden = false
+                self.fuelBarOutline.isHidden = false
+                
             GameScene.gameState = .ready
             })
             }
@@ -201,6 +249,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     //MARK: StartOfDrillMode
     /* Called when touch is made */
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        
+        if GameScene.paused {
+           GameScene.paused = false
+            self.isPaused = false
+        }
         
         if GameScene.gameState == .finishRound {
             /* Bring results board up */
@@ -215,6 +268,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             /* Show shop sign */
             shopButton.isHidden = false
             shopButton.run(SKAction(named: "MoveSignUp")!)
+            
+            /* Reset fuel */
+            hasFuel = true
+            fuelBar.run(SKAction.fadeIn(withDuration: 0.5))
+            fuelBarOutline.run(SKAction.fadeIn(withDuration: 0.5))
             
             /* Remove all drill trails */
             for node in undergroundLayer.children[0].children {
@@ -248,7 +306,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
             
             /* Reset money value */
-            GameScene.currentMoney = 0
+            currentMoney = 0
             
             /* Reset count tracker */
             collectCount = 0
@@ -333,10 +391,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func scrollDrillMode() {
         /* Scroll for drilling */
         if drillDirection == .left || drillDirection == .right {
-            undergroundLayer.position.y += 1.7 * deltaTime * 60
+            undergroundLayer.position.y += 1.7
         }
         else {
-            undergroundLayer.position.y += 2 * deltaTime * 60
+            undergroundLayer.position.y += 2
         }
         
         /* Get position of latest ground segment in undergroundLayer */
@@ -379,7 +437,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /* Scrolling for collection mode */
     func scrollCollectMode() {
         /* Scroll background downwards */
-        undergroundLayer.position.y -= 6 * deltaTime * 60
+        undergroundLayer.position.y -= 5
         
         /* Get position of topmost ground segment in undergroundLayer */
         let undergroundOld = undergroundLayer.convert(undergroundLayer.children[0].position, to: self)
@@ -450,63 +508,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         //MARK: EndofDrillMode/StartOfCollectMode
         /* Check if one of the contact nodes is the drill */
         if contactA.categoryBitMask == 1 || contactB.categoryBitMask == 1 {
-            /* Disable drill movement from touch input */
-            GameScene.gameState = .wait
-            self.drillDirection = .middle
-            
-            /* Stop current drill movement */
-            drill.physicsBody?.velocity.dx = 0
-            drill.physicsBody?.angularVelocity = 0
-            
-            /* Run death sequence */
-            drill.removeAllActions()
-            drill.runDeathAnimation()
-            
-            /* Disable drill collisions */
-            drill.physicsBody?.categoryBitMask = 0
-            
-            /* Play flashing triangles */
-            for node in cameraNode.children {
-                if node.name == "triangle" {
-                    node.run(SKAction(named: "FlashTriangle")!)
-                }
-            }
-            
-            run(SKAction.wait(forDuration: 1.5), completion:  { [unowned self] in
-                if GameScene.gameState != .ready {
-                    
-                    if !self.tutorialPlayed {
-                        //MARK: Tutorial
-                        GameScene.gameState = .inTutorial
-                    }
-                    else {
-                    /* Enable collecting state */
-                    GameScene.gameState = .collecting
-                    }
-                    
-                    /* Enable all nodes in underground to be mined */
-                    for segment in self.undergroundLayer.children {
-                        for node in segment.children {
-                            if String(describing: type(of: node)) == "Obstacle" {
-                                (node as! Obstacle).setMiningEnabled()
-                            }
-                        }
-                    }
-                    
-                    /* Enable all nodes in segment stack to be mined */
-                    for segment in self.segmentStack {
-                        for node in segment.children {
-                            if String(describing: type(of: node)) == "Obstacle" {
-                                (node as! Obstacle).setMiningEnabled()
-                            }
-                        }
-                    }
-                    
-                    /* Show cart */
-                    self.cart.isHidden = false
-                }
-                
-            })
+            startCollect(withExplosions: true)
         }
             /* If contact between collectItem and cart */
         else if (contactA.categoryBitMask == 8 && contactB.categoryBitMask == 16) || (contactA.categoryBitMask == 16 && contactB.categoryBitMask == 8) {
@@ -519,8 +521,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     
                     /* Increment money */
                     if GameScene.gameState == .catching {
-                        GameScene.totalMoney += (contactA.node as! CatchItem).moneyValue
-                        GameScene.currentMoney += (contactA.node as! CatchItem).moneyValue
+                        totalMoney += (contactA.node as! CatchItem).moneyValue
+                        currentMoney += (contactA.node as! CatchItem).moneyValue
                         collectCount += 1
                     }
                     
@@ -551,8 +553,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     
                     /* Increment money */
                     if GameScene.gameState == .catching {
-                        GameScene.totalMoney += (contactB.node as! CatchItem).moneyValue
-                        GameScene.currentMoney += (contactB.node as! CatchItem).moneyValue
+                        totalMoney += (contactB.node as! CatchItem).moneyValue
+                        currentMoney += (contactB.node as! CatchItem).moneyValue
                         collectCount += 1
                     }
                     
@@ -678,12 +680,32 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /* Called for every instance of a frame */
     override func update(_ currentTime: TimeInterval) {
         
-        /* Update delta */
-        deltaTime = CGFloat(currentTime) - lastUpdateTime
-        lastUpdateTime = CGFloat(currentTime)
+        if GameScene.paused {
+            self.isPaused = true
+            return
+        }
         
-        print(undergroundLayer.convert(cameraNode.position, to: self).y/10)
-        GameScene.depth = Int(undergroundLayer.convert(cameraNode.position, to: self).y/15 - 28)
+     
+        /* Update depth */
+        let currDepth = abs(undergroundLayer.convert(self.position, to: self).y/30)
+        
+        if GameScene.gameState == .drilling || GameScene.gameState == .collecting || GameScene.gameState == .wait || GameScene.gameState == .inTutorial{
+        self.depth = Int(currDepth)
+            
+            if GameScene.gameState != .collecting {
+            fuelBar.yScale = (CGFloat(maxDepth) - abs(undergroundLayer.convert(self.position, to: self).y/30))/CGFloat(maxDepth)
+            }
+        }
+        else {
+            self.depth = 0
+            fuelBar.yScale = 1
+        }
+        
+        /* Out of fuel */
+        if fuelBar.yScale <= 0 && hasFuel {
+            hasFuel = false
+            startCollect(withExplosions: false)
+        }
         
         /* Clamp veolcity in y */
         drill.physicsBody?.velocity.dy = 0
@@ -824,7 +846,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             item.physicsBody?.collisionBitMask = 96
             item.physicsBody?.angularVelocity = 0
             item.zRotation = 0
-            item.physicsBody?.velocity.dy = -350
+            item.physicsBody?.velocity.dy = -450
             
             /* Randomize x position */
             item.position = self.convert(CGPoint(x: randomBetweenNumbers(firstNum: 20, secondNum: 300), y: 600 + itemDistance), to: self)
@@ -833,7 +855,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             self.addChild(item)
             
             /* Increment spawns with a randomized distance */
-            itemDistance += 200 + randomBetweenNumbers(firstNum: 1, secondNum: 100)
+            itemDistance += 150 + randomBetweenNumbers(firstNum: 1, secondNum: 100)
         }
     }
     
@@ -859,8 +881,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         })
 
         
-        if GameScene.currentMoney > GameScene.bestRun {
-            GameScene.bestRun = GameScene.currentMoney
+        if currentMoney > bestRun {
+            bestRun = currentMoney
         }
     }
     
@@ -889,7 +911,71 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         /* Synchronizes the NSUserDefaults */
         UserDefaults.standard.synchronize()
         
-        GameScene.bestRun = 0
-        GameScene.totalMoney = 0
+        bestRun = 0
+        totalMoney = 0
+    }
+    
+    func startCollect(withExplosions: Bool) {
+        /* Disable drill movement from touch input */
+        GameScene.gameState = .wait
+        self.drillDirection = .middle
+        
+        /* Stop current drill movement */
+        drill.physicsBody?.velocity.dx = 0
+        drill.physicsBody?.angularVelocity = 0
+        
+        /* Run death sequence */
+        drill.removeAllActions()
+        drill.runDeathAnimation(withExplosions: withExplosions)
+        
+        /* Disable drill collisions */
+        drill.physicsBody?.categoryBitMask = 0
+        
+        /* Play flashing triangles */
+        for node in cameraNode.children {
+            if node.name == "triangle" {
+                node.run(SKAction(named: "FlashTriangle")!)
+            }
+        }
+        
+        run(SKAction.wait(forDuration: 1.5), completion:  { [unowned self] in
+            if GameScene.gameState != .ready {
+                
+                if !self.tutorialPlayed {
+                    //MARK: Tutorial
+                    GameScene.gameState = .inTutorial
+                }
+                else {
+                    /* Enable collecting state */
+                    GameScene.gameState = .collecting
+                }
+                
+                /* Fade out fuel bar */
+                self.fuelBar.run(SKAction.fadeOut(withDuration: 0.5))
+                self.fuelBarOutline.run(SKAction.fadeOut(withDuration: 0.5))
+                
+                /* Enable all nodes in underground to be mined */
+                for segment in self.undergroundLayer.children {
+                    for node in segment.children {
+                        if String(describing: type(of: node)) == "Obstacle" {
+                            (node as! Obstacle).setMiningEnabled()
+                        }
+                    }
+                }
+                
+                /* Enable all nodes in segment stack to be mined */
+                for segment in self.segmentStack {
+                    for node in segment.children {
+                        if String(describing: type(of: node)) == "Obstacle" {
+                            (node as! Obstacle).setMiningEnabled()
+                        }
+                    }
+                }
+                
+                /* Show cart */
+                self.cart.isHidden = false
+            }
+            
+        })
     }
 }

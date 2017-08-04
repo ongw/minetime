@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		DE174D861F34DCED00D8A99E /* Upgrade.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE174D851F34DCED00D8A99E /* Upgrade.swift */; };
 		DE1D72361F1FDC1F0019D4FF /* Drill.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE1D72351F1FDC1F0019D4FF /* Drill.swift */; };
 		DE1D72381F1FDE550019D4FF /* DrillActions.sks in Resources */ = {isa = PBXBuildFile; fileRef = DE1D72371F1FDE550019D4FF /* DrillActions.sks */; };
 		DE1D723D1F211D200019D4FF /* DrillDebris.sks in Resources */ = {isa = PBXBuildFile; fileRef = DE1D723B1F211D200019D4FF /* DrillDebris.sks */; };
@@ -38,6 +39,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		DE174D851F34DCED00D8A99E /* Upgrade.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Upgrade.swift; sourceTree = "<group>"; };
 		DE1D72351F1FDC1F0019D4FF /* Drill.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Drill.swift; sourceTree = "<group>"; };
 		DE1D72371F1FDE550019D4FF /* DrillActions.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = DrillActions.sks; sourceTree = "<group>"; };
 		DE1D723B1F211D200019D4FF /* DrillDebris.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = DrillDebris.sks; sourceTree = "<group>"; };
@@ -124,6 +126,7 @@
 				DECE11BA1F255C530005D447 /* CGFloat+Extensions.swift */,
 				DE6B4C7E1F1D209100770CAA /* Actions.sks */,
 				DE6B4C801F1D209100770CAA /* GameScene.swift */,
+				DE174D851F34DCED00D8A99E /* Upgrade.swift */,
 				DE6B4C821F1D209100770CAA /* GameViewController.swift */,
 				DE6B4C841F1D209100770CAA /* Main.storyboard */,
 				DECE11BE1F25D3050005D447 /* VCR_OSD_MONO_1.001.ttf */,
@@ -260,6 +263,7 @@
 				DE1D72361F1FDC1F0019D4FF /* Drill.swift in Sources */,
 				DECE11B31F214AE20005D447 /* Obstacle.swift in Sources */,
 				DE6C01E21F30FEC600B94F64 /* MSButtonNode.swift in Sources */,
+				DE174D861F34DCED00D8A99E /* Upgrade.swift in Sources */,
 				DE7346D81F26BE6000AF19BA /* Cart.swift in Sources */,
 				DE7346DC1F27D74800AF19BA /* CatchItem.swift in Sources */,
 				DE6B4C831F1D209100770CAA /* GameViewController.swift in Sources */,

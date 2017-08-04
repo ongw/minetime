@@ -30,7 +30,7 @@ class Drill: SKSpriteNode {
     var drillSmoke: SKEmitterNode!
     
     /* Drill movement actions */
-    let moveDownAction: SKAction = SKAction.moveTo(y: -200, duration: 0.65)
+    let moveDownAction: SKAction = SKAction.moveTo(y: -200, duration: 1.2)
     let moveUpResetAction: SKAction = SKAction.move(to: CGPoint(x: 160, y: 159), duration: 0)
     
     /* You are required to implement this for your subclass to work */
@@ -62,7 +62,7 @@ class Drill: SKSpriteNode {
         super.init(texture: texture, color: color, size: size)
     }
     
-    func runDeathAnimation(){
+    func runDeathAnimation(withExplosions: Bool){
         self.run(SKAction(named: "DrillShake")!)
         
         /* Turn on smoke */
@@ -73,6 +73,7 @@ class Drill: SKSpriteNode {
         self.removeAction(forKey: "idle")
         
         /* Explosions */
+        if withExplosions {
         drillBoomNode1.run(deathAction)
         run(SKAction.wait(forDuration: 0.25), completion: { [unowned self] in
             self.drillBoomNode2.run(self.deathAction)
@@ -86,6 +87,7 @@ class Drill: SKSpriteNode {
         run(SKAction.wait(forDuration: 0.95), completion: { [unowned self] in
             self.drillBoomNode5.run(self.deathAction)
         })
+        }
 
         run(SKAction.wait(forDuration: 1.5), completion:  { [unowned self] in
             /* Disable collision mask */
@@ -147,4 +149,6 @@ class Drill: SKSpriteNode {
         self.isHidden = true
         stopDrillingAnimation()
     }
+    
+    
 }
