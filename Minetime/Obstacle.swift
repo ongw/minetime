@@ -17,6 +17,8 @@ class Obstacle: SKSpriteNode {
     var oreDebris: SKEmitterNode = SKEmitterNode(fileNamed: "OreDebris")!
     var rockDebris: SKEmitterNode = SKEmitterNode(fileNamed: "RockDebris")!
     var cracks: SKSpriteNode!
+    var obstacleBody: SKSpriteNode!
+    var randomScale: CGFloat!
     
     
     /* You are required to implement this for your subclass to work */
@@ -26,19 +28,21 @@ class Obstacle: SKSpriteNode {
     
     /* You are required to implement this for your subclass to work */
     init(texture: SKTexture, tapCount: Int, moneyValue: Int, ingotTexture: SKTexture, debrisTexture: SKTexture, crackTexture: SKTexture) {
-        super.init(texture: SKTexture(imageNamed: "empty"), color: UIColor.clear, size: CGSize(width: texture.size().width + 35, height: texture.size().height + 35))
+        super.init(texture: SKTexture.init(), color: UIColor.clear, size: CGSize(width: texture.size().width + 50, height: texture.size().height + 50))
+        self.colorBlendFactor = 1
+        self.zPosition = 21
         
-        let obstacleBody: SKSpriteNode = SKSpriteNode(texture: texture, color: SKColor.clear, size: texture.size())
+        obstacleBody = SKSpriteNode(texture: texture, color: SKColor.clear, size: texture.size())
         
         /* Set obstacle size variation */
-        let randomScale = randomBetweenNumbers(firstNum: 1, secondNum: 1.5)
+        randomScale = randomBetweenNumbers(firstNum: 1, secondNum: 1.5)
         obstacleBody.setScale(randomScale)
         
         /* Set up physics behaviour */
         obstacleBody.physicsBody = SKPhysicsBody(circleOfRadius: texture.size().width/2-7)
         obstacleBody.physicsBody?.affectedByGravity = false
         obstacleBody.physicsBody?.allowsRotation = false
-        obstacleBody.zPosition = 3
+        obstacleBody.zPosition = -18
         obstacleBody.physicsBody?.mass = 3000
         /* Set up physics masks */
         obstacleBody.physicsBody?.categoryBitMask = 2
@@ -89,7 +93,7 @@ class Obstacle: SKSpriteNode {
         
         let icon: SKSpriteNode = SKSpriteNode(color: UIColor.clear, size: CGSize(width: 30, height: 30))
         icon.position = CGPoint(x: 30, y: -30)
-        icon.zPosition = 5
+        icon.zPosition = -5
         self.addChild(icon)
         icon.run(SKAction(named: "MineableOre")!)
         
@@ -126,6 +130,9 @@ class Obstacle: SKSpriteNode {
             }
             else {
                 cracks.isHidden = false
+                
+                obstacleBody.setScale(randomScale - 0.2)
+                cracks.setScale(randomScale - 0.2)
                 
                 self.run(SKAction(named: "OreShake")!)
                 rockDebris.isHidden = false

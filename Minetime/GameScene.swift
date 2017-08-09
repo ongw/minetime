@@ -19,7 +19,31 @@ enum direction {
 }
 
 enum upgrade {
-    case fuel
+    case fuel, pickaxe
+}
+
+extension MutableCollection where Indices.Iterator.Element == Index {
+    /// Shuffles the contents of this collection.
+    mutating func shuffle() {
+        let c = count
+        guard c > 1 else { return }
+        
+        for (firstUnshuffled , unshuffledCount) in zip(indices, stride(from: c, to: 1, by: -1)) {
+            let d: IndexDistance = numericCast(arc4random_uniform(numericCast(unshuffledCount)))
+            guard d != 0 else { continue }
+            let i = index(firstUnshuffled, offsetBy: d)
+            swap(&self[firstUnshuffled], &self[i])
+        }
+    }
+}
+
+extension Sequence {
+    /// Returns an array with the contents of this sequence, shuffled.
+    func shuffled() -> [Iterator.Element] {
+        var result = Array(self)
+        result.shuffle()
+        return result
+    }
 }
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
@@ -33,10 +57,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var celebrateEmit: SKEmitterNode!
     var oreDebris: SKEmitterNode = SKEmitterNode(fileNamed: "OreDebris")!
     var finishBoard: SKSpriteNode!
+    var newStamp: SKSpriteNode!
+    var scrollLayer: SKNode!
     
     /* Initialize buttons */
     var shopButton: MSButtonNode!
     var backButton: MSButtonNode!
+    var creditButton: MSButtonNode!
+    var backButton2: MSButtonNode!
     
     /* Initialize upgrade elements */
     static var tapPower: Int = 1
@@ -44,6 +72,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var fuelBar: SKSpriteNode!
     var fuelBarOutline: SKSpriteNode!
     var hasFuel: Bool = true
+    var warningLabel: SKLabelNode!
+    var atLowFuel: Bool = false
     
     /* Initialize pause elements */
     static var pause: SKSpriteNode!
@@ -58,7 +88,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
         }
     }
-
+    
     var lastDrillTrailPosition: CGPoint = CGPoint(x: 160, y: 120)
     
     /* User Default Objects */
@@ -90,7 +120,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             /* Update label */
             self.totalMoneyLabel.text = "$\(String(self.totalMoney))"
         }
-
+        
     }
     
     /* Label/var to track current round money */
@@ -141,9 +171,49 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let moveCameraDownAction: SKAction = SKAction.init(named: "MoveCameraDown")!
     let moveCameraUpAction: SKAction = SKAction.init(named: "MoveCameraUp")!
     let moveCameraRightAction: SKAction = SKAction.init(named: "MoveCameraRight")!
+    let moveCameraLeftAction: SKAction = SKAction.init(named: "MoveCameraLeft")!
     
     /* Drill action to derotate */
     let drillDerotateAction: SKAction = SKAction.init(named: "DrillDerotate")!
+    
+    
+    //MARK: SHOP
+    /* Initialize shop elements */
+    var fuelUpgrade: Upgrade!
+    var fuelLevel: Int{
+        get {
+            return UserDefaults.standard.integer(forKey: "fuelLevel")
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "fuelLevel")
+        }
+    }
+    
+    var pickaxeUpgrade: Upgrade!
+    var pickaxeLevel: Int{
+        get {
+            return UserDefaults.standard.integer(forKey: "pickaxeLevel")
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "pickaxeLevel")
+        }
+    }
+    
+    static var upgradeList = [Upgrade]()
+    static var shopBottom: SKSpriteNode!
+    var purchaseButton: MSButtonNode!
+    static var selectedUpgrade: Upgrade! {
+        didSet {
+            if GameScene.selectedUpgrade.level == GameScene.selectedUpgrade.price.count {
+                (GameScene.shopBottom.childNode(withName: "bottomLevel") as! SKLabelNode).text = "LVL:MAX"
+            }
+            else {
+                (GameScene.shopBottom.childNode(withName: "bottomLevel") as! SKLabelNode).text = "LVL:\(String(GameScene.selectedUpgrade.level))"
+                (GameScene.shopBottom.childNode(withName: "//purchasePrice") as! SKLabelNode).text = "$\(String(GameScene.selectedUpgrade.price[GameScene.selectedUpgrade.level]))"
+            }
+            
+        }
+    }
     
     /* Called when scene is made */
     override func didMove(to view: SKView) {
@@ -178,11 +248,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.totalMoneyLabel = cameraNode.childNode(withName: "totalMoneyLabel") as! SKLabelNode
         self.totalMoneyLabel.text = "$\(String(totalMoney))"
         
+        /* Set up finish board */
+        finishBoard = childNode(withName: "finishBoard") as! SKSpriteNode
+        
         /* Set up current money label */
-        self.currentMoneyLabel = childNode(withName: "//earnedMoneyLabel") as! SKLabelNode
+        self.currentMoneyLabel = finishBoard.childNode(withName: "earnedMoneyLabel") as! SKLabelNode
+        
+        /* Set up new best run label */
+        newStamp = finishBoard.childNode(withName: "newStamp") as! SKSpriteNode
+        newStamp.isHidden = true
         
         /* Set up best run money label */
-        bestRunLabel = childNode(withName: "//bestRunLabel") as! SKLabelNode
+        bestRunLabel = finishBoard.childNode(withName: "bestRunLabel") as! SKLabelNode
         bestRunLabel.text = "$\(String(bestRun))"
         
         /* Set up depth label */
@@ -191,6 +268,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         /* Set up fuel bar */
         fuelBar = cameraNode.childNode(withName: "fuelBar") as! SKSpriteNode
         fuelBarOutline = cameraNode.childNode(withName: "fuelBarOutline") as! SKSpriteNode
+        warningLabel = cameraNode.childNode(withName: "warningLabel") as! SKLabelNode
         
         /* Set up cart celebrate emit */
         celebrateEmit = cart.childNode(withName: "celebrate") as! SKEmitterNode
@@ -200,18 +278,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         GameScene.pause = cameraNode.childNode(withName: "pause") as! SKSpriteNode
         GameScene.pause.isHidden = true
         
+        /* Scrolling clouds */
+        scrollLayer = self.childNode(withName: "scrollLayer")!
+
+        
         //MARK: ResetTutorial
         resetTutorial()
         resetValues()
+        //self.totalMoney = 1000
         
         /* Set up button references */
         shopButton = self.childNode(withName: "shopButton") as! MSButtonNode
         backButton = self.childNode(withName: "backButton") as! MSButtonNode
+        creditButton = self.childNode(withName: "creditButton") as! MSButtonNode
+        backButton2 = self.childNode(withName: "backButton2") as! MSButtonNode
+        
         
         /* Set shop button handler */
         shopButton.selectedHandler = {
             if GameScene.gameState == .ready {
-            GameScene.gameState = .wait
+                GameScene.gameState = .wait
+                self.purchaseButton.isUserInteractionEnabled = false
                 
                 self.cameraNode.run(self.moveCameraRightAction)
                 
@@ -222,28 +309,126 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 
                 self.run(SKAction.wait(forDuration: 0.5), completion:  {
                     GameScene.gameState = .inShop
+                    self.purchaseButton.isUserInteractionEnabled = true
                 })
             }
         }
         
-        /* Set shop button handler */
+        /* Set back button handler */
         backButton.selectedHandler = {
             if GameScene.gameState == .inShop {
                 GameScene.gameState = .wait
-            self.cameraNode.run(self.moveCameraUpAction)
+                self.purchaseButton.isUserInteractionEnabled = false
+                self.cameraNode.run(self.moveCameraUpAction)
                 
-            self.run(SKAction.wait(forDuration: 0.5), completion:  {
-                
-                /* Show indicators */
-                self.depthLabel.isHidden = false
-                self.fuelBar.isHidden = false
-                self.fuelBarOutline.isHidden = false
-                
-            GameScene.gameState = .ready
-            })
+                self.run(SKAction.wait(forDuration: 0.5), completion:  {
+                    
+                    /* Show indicators */
+                    self.depthLabel.isHidden = false
+                    self.fuelBar.isHidden = false
+                    self.fuelBarOutline.isHidden = false
+                    self.purchaseButton.isUserInteractionEnabled = true
+                    
+                    GameScene.gameState = .ready
+                })
             }
         }
+        
+        /* Set credit button handler */
+        creditButton.selectedHandler = {
+            if GameScene.gameState == .ready {
+                GameScene.gameState = .wait
+                
+                self.cameraNode.run(self.moveCameraLeftAction)
+                
+                /* Hide indicators */
+                self.depthLabel.isHidden = true
+                self.fuelBar.isHidden = true
+                self.fuelBarOutline.isHidden = true
+                self.totalMoneyLabel.isHidden = true
+                
+                self.run(SKAction.wait(forDuration: 0.5), completion:  {
+                    GameScene.gameState = .inShop
+                })
+            }
         }
+        
+        /* Set back button handler */
+        backButton2.selectedHandler = {
+            if GameScene.gameState == .inShop {
+                GameScene.gameState = .wait
+                self.cameraNode.run(self.moveCameraUpAction)
+                
+                self.run(SKAction.wait(forDuration: 0.5), completion:  {
+                    
+                    /* Show indicators */
+                    self.depthLabel.isHidden = false
+                    self.fuelBar.isHidden = false
+                    self.fuelBarOutline.isHidden = false
+                    self.totalMoneyLabel.isHidden = false
+                    
+                    GameScene.gameState = .ready
+                })
+            }
+        }
+
+        
+        
+        
+        //MARK: ShopElements
+        GameScene.shopBottom = childNode(withName: "shopBottom") as! SKSpriteNode
+        purchaseButton = GameScene.shopBottom.childNode(withName: "purchaseButton") as! MSButtonNode
+        
+        purchaseButton.selectedHandler = {
+            
+            if GameScene.selectedUpgrade.level == GameScene.selectedUpgrade.price.count {
+                return
+            }
+            
+            if self.totalMoney >= GameScene.selectedUpgrade.price[GameScene.selectedUpgrade.level] {
+                self.totalMoney -= GameScene.selectedUpgrade.price[GameScene.selectedUpgrade.level]
+                GameScene.selectedUpgrade.level += 1
+                switch GameScene.selectedUpgrade.upgradeType! {
+                case .fuel:
+                    self.maxDepth = 50 * GameScene.selectedUpgrade.level + 50
+                    GameScene.selectedUpgrade = GameScene.selectedUpgrade
+                    self.fuelLevel += 1
+                case .pickaxe:
+                    GameScene.tapPower = GameScene.selectedUpgrade.level
+                    GameScene.selectedUpgrade = GameScene.selectedUpgrade
+                    self.pickaxeLevel += 1
+                }
+            }
+        }
+        
+        
+        
+        //MARK: FuelUpgrade
+        fuelUpgrade = self.childNode(withName: "fuelUpgrade") as! Upgrade
+        fuelUpgrade.upgradeType = .fuel
+        fuelUpgrade.isSelected = true
+        fuelUpgrade.bottomTexture = SKTexture(imageNamed: "fuelBottom")
+        fuelUpgrade.price = [0, 100, 300, 800, 2000]
+        
+        
+        fuelUpgrade.level = fuelLevel
+        self.maxDepth = 50 * fuelUpgrade.level + 50
+        
+        GameScene.upgradeList.append(fuelUpgrade)
+        
+        //MARK: PickaxeUpgrade
+        pickaxeUpgrade = self.childNode(withName: "pickaxeUpgrade") as! Upgrade
+        pickaxeUpgrade.upgradeType = .pickaxe
+        pickaxeUpgrade.bottomTexture = SKTexture(imageNamed: "pickaxeBottom")
+        pickaxeUpgrade.price = [0, 150, 400, 1200, 2500]
+        pickaxeUpgrade.level = pickaxeLevel
+        GameScene.tapPower = pickaxeUpgrade.level
+        GameScene.upgradeList.append(pickaxeUpgrade)
+        
+        GameScene.selectedUpgrade = pickaxeUpgrade
+        GameScene.selectedUpgrade = fuelUpgrade
+        
+    }
     
     
     //MARK: StartOfDrillMode
@@ -251,18 +436,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         
         if GameScene.paused {
-           GameScene.paused = false
+            GameScene.paused = false
             self.isPaused = false
         }
         
         if GameScene.gameState == .finishRound {
             /* Bring results board up */
-            childNode(withName: "finishBoard")?.run(SKAction(named: "MoveBoardUp")!, completion: {
+            finishBoard.run(SKAction(named: "MoveBoardUp")!, completion: {
                 
                 if GameScene.gameState != .drilling {
                     /* Enable game start */
                     GameScene.gameState = .ready
                 }
+                self.newStamp.isHidden = true
             })
             
             /* Show shop sign */
@@ -273,6 +459,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             hasFuel = true
             fuelBar.run(SKAction.fadeIn(withDuration: 0.5))
             fuelBarOutline.run(SKAction.fadeIn(withDuration: 0.5))
+            atLowFuel = false
             
             /* Remove all drill trails */
             for node in undergroundLayer.children[0].children {
@@ -297,12 +484,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 /* Hide shop sign */
                 self.shopButton.isHidden = true
                 self.shopButton.run(SKAction(named: "MoveSignDown")!)
+                
+                if !self.tutorialPlayed {
+                    self.warningLabel.fontSize = 28
+                    self.warningLabel.fontColor = UIColor.white
+                    self.warningLabel.text = "AVOID THE ROCKS"
+                    self.warningLabel.run(SKAction(named: "Reveal")!)
+                }
+                
+                self.run(SKAction.wait(forDuration: 1), completion:  {
+                    self.childNode(withName: "title")?.isHidden = true
+                })
             })
             
             //MARK: Tutorial
             /* Play hand tutorial triangles */
             if !tutorialPlayed {
-            cameraNode.childNode(withName: "moveHand")?.run(SKAction(named: "MoveHand")!)
+                cameraNode.childNode(withName: "moveHand")?.run(SKAction(named: "MoveHand")!)
             }
             
             /* Reset money value */
@@ -415,7 +613,35 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             //MARK: SpawnObstacles
             /* Spawn copper obstacles */
-            spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 3, spawnMax: 5, texture: SKTexture(imageNamed: "copperOre1"), ingotTexture: SKTexture(imageNamed: "copperIngot"), debrisTexture: SKTexture(imageNamed: "copperDebris"), tapCount: 2, moneyValue: 3, crackTexture: SKTexture(imageNamed: "copper1Crack"))
+            if depth > 250 {
+                spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 2, spawnMax: 3, texture: SKTexture(imageNamed: "goldOre1"), ingotTexture: SKTexture(imageNamed: "goldIngot"), debrisTexture: SKTexture(imageNamed: "goldDebris"), tapCount: 5, moneyValue: 25, crackTexture: SKTexture(imageNamed: "goldCrack1"))
+                spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 2, spawnMax: 3, texture: SKTexture(imageNamed: "platinumOre1"), ingotTexture: SKTexture(imageNamed: "platinumIngot"), debrisTexture: SKTexture(imageNamed: "platinumDebris"), tapCount: 9, moneyValue: 50, crackTexture: SKTexture(imageNamed: "platinumCrack1"))
+            }
+            else if depth > 220 {
+                spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 0, spawnMax: 1, texture: SKTexture(imageNamed: "silverOre1"), ingotTexture: SKTexture(imageNamed: "silverIngot"), debrisTexture: SKTexture(imageNamed: "silverDebris"), tapCount: 3, moneyValue: 10, crackTexture: SKTexture(imageNamed: "silverCrack1"))
+                spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 3, spawnMax: 4, texture: SKTexture(imageNamed: "goldOre1"), ingotTexture: SKTexture(imageNamed: "goldIngot"), debrisTexture: SKTexture(imageNamed: "goldDebris"), tapCount: 5, moneyValue: 25, crackTexture: SKTexture(imageNamed: "goldCrack1"))
+                spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 1, spawnMax: 2, texture: SKTexture(imageNamed: "platinumOre1"), ingotTexture: SKTexture(imageNamed: "platinumIngot"), debrisTexture: SKTexture(imageNamed: "platinumDebris"), tapCount: 9, moneyValue: 50, crackTexture: SKTexture(imageNamed: "platinumCrack1"))
+            }
+            else if depth > 175 {
+                spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 0, spawnMax: 1, texture: SKTexture(imageNamed: "copperOre1"), ingotTexture: SKTexture(imageNamed: "copperIngot"), debrisTexture: SKTexture(imageNamed: "copperDebris"), tapCount: 2, moneyValue: 2, crackTexture: SKTexture(imageNamed: "copperCrack1"))
+                 spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 3, spawnMax: 5, texture: SKTexture(imageNamed: "silverOre1"), ingotTexture: SKTexture(imageNamed: "silverIngot"), debrisTexture: SKTexture(imageNamed: "silverDebris"), tapCount: 3, moneyValue: 10, crackTexture: SKTexture(imageNamed: "silverCrack1"))
+                    spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 1, spawnMax: 1, texture: SKTexture(imageNamed: "goldOre1"), ingotTexture: SKTexture(imageNamed: "goldIngot"), debrisTexture: SKTexture(imageNamed: "goldDebris"), tapCount: 5, moneyValue: 25, crackTexture: SKTexture(imageNamed: "goldCrack1"))
+            }
+            else if depth > 130 {
+                spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 1, spawnMax: 2, texture: SKTexture(imageNamed: "copperOre1"), ingotTexture: SKTexture(imageNamed: "copperIngot"), debrisTexture: SKTexture(imageNamed: "copperDebris"), tapCount: 2, moneyValue: 2, crackTexture: SKTexture(imageNamed: "copperCrack1"))
+                spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 3, spawnMax: 5, texture: SKTexture(imageNamed: "silverOre1"), ingotTexture: SKTexture(imageNamed: "silverIngot"), debrisTexture: SKTexture(imageNamed: "silverDebris"), tapCount: 3, moneyValue: 10, crackTexture: SKTexture(imageNamed: "silverCrack1"))
+            }
+            else if depth > 115 {
+                spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 3, spawnMax: 4, texture: SKTexture(imageNamed: "copperOre1"), ingotTexture: SKTexture(imageNamed: "copperIngot"), debrisTexture: SKTexture(imageNamed: "copperDebris"), tapCount: 2, moneyValue: 2, crackTexture: SKTexture(imageNamed: "copperCrack1"))
+                spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 1, spawnMax: 2, texture: SKTexture(imageNamed: "silverOre1"), ingotTexture: SKTexture(imageNamed: "silverIngot"), debrisTexture: SKTexture(imageNamed: "silverDebris"), tapCount: 3, moneyValue: 10, crackTexture: SKTexture(imageNamed: "silverCrack1"))
+            }
+            else if depth > 80 {
+                spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 3, spawnMax: 5, texture: SKTexture(imageNamed: "copperOre1"), ingotTexture: SKTexture(imageNamed: "copperIngot"), debrisTexture: SKTexture(imageNamed: "copperDebris"), tapCount: 2, moneyValue: 2, crackTexture: SKTexture(imageNamed: "copperCrack1"))
+                spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 1, spawnMax: 1, texture: SKTexture(imageNamed: "silverOre1"), ingotTexture: SKTexture(imageNamed: "silverIngot"), debrisTexture: SKTexture(imageNamed: "silverDebris"), tapCount: 3, moneyValue: 10, crackTexture: SKTexture(imageNamed: "silverCrack1"))
+            }
+            else {
+                spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 3, spawnMax: 5, texture: SKTexture(imageNamed: "copperOre1"), ingotTexture: SKTexture(imageNamed: "copperIngot"), debrisTexture: SKTexture(imageNamed: "copperDebris"), tapCount: 2, moneyValue: 2, crackTexture: SKTexture(imageNamed: "copperCrack1"))
+            }
             
             /* Add to main underground layer */
             undergroundLayer.addChild(newUndergroundSegment)
@@ -437,7 +663,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /* Scrolling for collection mode */
     func scrollCollectMode() {
         /* Scroll background downwards */
+        if self.pickaxeUpgrade.level > 1 {
+            undergroundLayer.position.y -= 6
+        }
+        else {
         undergroundLayer.position.y -= 5
+        }
         
         /* Get position of topmost ground segment in undergroundLayer */
         let undergroundOld = undergroundLayer.convert(undergroundLayer.children[0].position, to: self)
@@ -543,7 +774,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                         /* Remove emitter */
                         newEmit.removeFromParent()
                     })
-
+                    
                 }
             }
             else {
@@ -668,7 +899,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 run(SKAction.wait(forDuration: 0.5), completion:  { [unowned self] in
                     if GameScene.gameState != .drilling {
                         //MARK: EndOfCatchMode
-                       self.runFinish()
+                        self.runFinish()
                         
                     }
                     self.cart.physicsBody?.velocity.dx = 0
@@ -685,20 +916,32 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             return
         }
         
-     
+        scroll(scrollLayer: scrollLayer)
+        
         /* Update depth */
         let currDepth = abs(undergroundLayer.convert(self.position, to: self).y/30)
         
         if GameScene.gameState == .drilling || GameScene.gameState == .collecting || GameScene.gameState == .wait || GameScene.gameState == .inTutorial{
-        self.depth = Int(currDepth)
+            self.depth = Int(currDepth)
             
             if GameScene.gameState != .collecting {
-            fuelBar.yScale = (CGFloat(maxDepth) - abs(undergroundLayer.convert(self.position, to: self).y/30))/CGFloat(maxDepth)
+                fuelBar.yScale = (CGFloat(maxDepth) - abs(undergroundLayer.convert(self.position, to: self).y/30))/CGFloat(maxDepth)
             }
         }
         else {
             self.depth = 0
             fuelBar.yScale = 1
+        }
+        
+        /* Low Fuel */
+        if fuelBar.yScale <= 0.2 && !atLowFuel {
+            atLowFuel = true
+            
+            warningLabel.fontSize = 36
+            warningLabel.fontColor = UIColor.init(red: 0.863, green: 0.157, blue: 0.157, alpha: 1)
+            warningLabel.text = "-LOW FUEL-"
+            warningLabel.alpha = 1
+            warningLabel.run(SKAction(named: "Flash")!)
         }
         
         /* Out of fuel */
@@ -747,7 +990,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 }
                 
                 if randomBetweenNumbers(firstNum: 0, secondNum: 1) < 0.5 {
-                drillTrail.xScale = -1
+                    drillTrail.xScale = -1
                 }
                 
                 drillTrail.position = self.convert(drill.position, to: getDrillTrailSegment())
@@ -806,16 +1049,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 /* Play flashing triangles */
                 for node in self.cameraNode.children {
                     if node.name == "triangle" {
-                        node.run(SKAction(named: "FlashTriangle")!)
+                        node.run(SKAction(named: "Flash")!)
                     }
                 }
                 self.run(SKAction.wait(forDuration: 1.3), completion:  { [unowned self] in
                     //MARK: Tutorial
                     if !self.tutorialPlayed {
-                    /* Play hand tutorial triangles */
-                     self.cameraNode.childNode(withName: "moveHand")?.run(SKAction(named: "MoveHand")!)
-                    UserDefaults.standard.set(true, forKey: "tutorialPlayed")
-                    self.tutorialPlayed = true
+                        /* Play hand tutorial triangles */
+                        self.cameraNode.childNode(withName: "moveHand")?.run(SKAction(named: "MoveHand")!)
+                        UserDefaults.standard.set(true, forKey: "tutorialPlayed")
+                        
+                        
+                        self.warningLabel.fontSize = 28
+                        self.warningLabel.text = "CATCH THEM ALL!"
+                        self.warningLabel.run(SKAction(named: "Reveal")!)
+                        
+                        self.tutorialPlayed = true
                     }
                 })
                 self.run(SKAction.wait(forDuration: 2.1), completion:  { [unowned self] in
@@ -836,6 +1085,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         /* Distance between spawned itens */
         var itemDistance: CGFloat = 0
+        GameScene.collectStack.shuffle()
         
         for item in GameScene.collectStack {
             
@@ -865,24 +1115,29 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func runFinish() {
-        GameScene.gameState = .wait
-        
-        /* Bring results board down */
-        childNode(withName: "finishBoard")?.run(SKAction(named: "MoveBoardDown")!, completion: { [unowned self] in
+        if GameScene.gameState != .wait {
+            GameScene.gameState = .wait
             
-            /* Hide cart */
-            self.cart.isHidden = true
-            self.cart.reset()
-            
-            /* Show drill */
-            self.drill.isHidden = false
-            
-            GameScene.gameState = .finishRound
-        })
-
-        
-        if currentMoney > bestRun {
-            bestRun = currentMoney
+            /* Bring results board down */
+            finishBoard.run(SKAction(named: "MoveBoardDown")!, completion: { [unowned self] in
+                
+                /* Hide cart */
+                self.cart.isHidden = true
+                self.cart.reset()
+                
+                /* Show drill */
+                self.drill.isHidden = false
+                
+                if self.currentMoney > self.bestRun {
+                    self.bestRun = self.currentMoney
+                    self.newStamp.run(SKAction(named: "NewStamp")!, completion: {
+                        GameScene.gameState = .finishRound
+                    })
+                }
+                else {
+                    GameScene.gameState = .finishRound
+                }
+            })
         }
     }
     
@@ -908,6 +1163,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         /* Sets the bool value for the key "bestRun" and "totalMoney" to be equal to false */
         UserDefaults.standard.set(0, forKey: "bestRun")
         UserDefaults.standard.set(0, forKey: "totalMoney")
+        UserDefaults.standard.set(1, forKey: "fuelLevel")
+        UserDefaults.standard.set(1, forKey: "pickaxeLevel")
         /* Synchronizes the NSUserDefaults */
         UserDefaults.standard.synchronize()
         
@@ -934,7 +1191,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         /* Play flashing triangles */
         for node in cameraNode.children {
             if node.name == "triangle" {
-                node.run(SKAction(named: "FlashTriangle")!)
+                node.run(SKAction(named: "Flash")!)
             }
         }
         
@@ -944,6 +1201,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 if !self.tutorialPlayed {
                     //MARK: Tutorial
                     GameScene.gameState = .inTutorial
+                    
+                    self.warningLabel.fontSize = 28
+                    self.warningLabel.fontColor = UIColor.white
+                    self.warningLabel.text = "TAP TO MINE ORE"
+                    self.warningLabel.run(SKAction(named: "Reveal")!)
                 }
                 else {
                     /* Enable collecting state */
@@ -977,5 +1239,26 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
             
         })
+    }
+    
+    func scroll(scrollLayer: SKNode!) {
+        /* Scroll */
+        scrollLayer.position.x -= 1
+        
+        for element in scrollLayer.children as! [SKSpriteNode] {
+            
+            /* Get ground node position, convert node position to scene space */
+            let elementPosition = scrollLayer.convert(element.position, to: self)
+            
+            /* Check if ground sprite has left the scene */
+            if elementPosition.x <= -(element.size.width/2 + 320){
+                
+                /* Reposition ground sprite to the second starting position */
+                let newPosition = CGPoint(x: (element.size.width / 2) + 640, y: elementPosition.y)
+                
+                /* Convert new node position back to scroll layer space */
+                element.position = self.convert(newPosition, to: scrollLayer)
+            }
+        }
     }
 }
