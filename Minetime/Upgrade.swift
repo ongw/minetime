@@ -19,7 +19,7 @@ class Upgrade: SKSpriteNode {
                 (childNode(withName: "levelLabel") as! SKLabelNode).text = "LVL:MAX"
             }
             else {
-            (childNode(withName: "levelLabel") as! SKLabelNode).text = "LVL:\(String(level))"
+                (childNode(withName: "levelLabel") as! SKLabelNode).text = "LVL:\(String(level))"
             }
         }
     }
@@ -74,18 +74,15 @@ class Upgrade: SKSpriteNode {
             self.run(secondHalfCardFlip)
         }
         
-        /* Flip bottom border */
-        GameScene.shopBottom.run(firstHalfFlip) {
-            GameScene.shopBottom.texture = self.bottomTexture
-            
-            GameScene.selectedUpgrade = self
-//            (GameScene.shopBottom.childNode(withName: "bottomLevel") as! SKLabelNode).text = "LVL:\(String(self.level))"
-//            (GameScene.shopBottom.childNode(withName: "purchasePrice") as! SKLabelNode).text = "$\(String(self.price[self.level]))"
-            
-            GameScene.shopBottom.run(secondHalfBottomFlip)
+        if !price.isEmpty {
+            /* Flip bottom border */
+            GameScene.shopBottom.run(firstHalfFlip) {
+                GameScene.shopBottom.texture = self.bottomTexture
+                
+                GameScene.selectedUpgrade = self
+                GameScene.shopBottom.run(secondHalfBottomFlip)
+            }
         }
-        
-       
         
     }
 }

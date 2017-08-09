@@ -11,7 +11,7 @@ import GameplayKit
 
 /* Tracking enum for game state */
 enum GameState {
-    case ready, drilling, collecting, catching, wait, inTutorial, inShop, finishRound
+    case ready, drilling, collecting, catching, wait, inTutorial, inShop, finishRound, inTranstion
 }
 
 enum direction {
@@ -182,7 +182,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var fuelUpgrade: Upgrade!
     var fuelLevel: Int{
         get {
-            return UserDefaults.standard.integer(forKey: "fuelLevel")
+            if UserDefaults.standard.integer(forKey: "fuelLevel") == 0 {
+                UserDefaults.standard.set(1, forKey: "fuelLevel")
+                return UserDefaults.standard.integer(forKey: "fuelLevel")
+            }
+            else {
+                return UserDefaults.standard.integer(forKey: "fuelLevel")
+            }
         }
         set {
             UserDefaults.standard.set(newValue, forKey: "fuelLevel")
@@ -192,7 +198,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var pickaxeUpgrade: Upgrade!
     var pickaxeLevel: Int{
         get {
-            return UserDefaults.standard.integer(forKey: "pickaxeLevel")
+            if UserDefaults.standard.integer(forKey: "pickaxeLevel") == 0 {
+                UserDefaults.standard.set(1, forKey: "pickaxeLevel")
+                return UserDefaults.standard.integer(forKey: "pickaxeLevel")
+            }
+            else {
+                return UserDefaults.standard.integer(forKey: "pickaxeLevel")
+            }
         }
         set {
             UserDefaults.standard.set(newValue, forKey: "pickaxeLevel")
@@ -206,6 +218,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         didSet {
             if GameScene.selectedUpgrade.level == GameScene.selectedUpgrade.price.count {
                 (GameScene.shopBottom.childNode(withName: "bottomLevel") as! SKLabelNode).text = "LVL:MAX"
+                (GameScene.shopBottom.childNode(withName: "//purchasePrice") as! SKLabelNode).text = "MAX"
             }
             else {
                 (GameScene.shopBottom.childNode(withName: "bottomLevel") as! SKLabelNode).text = "LVL:\(String(GameScene.selectedUpgrade.level))"
@@ -280,12 +293,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         /* Scrolling clouds */
         scrollLayer = self.childNode(withName: "scrollLayer")!
-
+        
         
         //MARK: ResetTutorial
-        resetTutorial()
-        resetValues()
-        //self.totalMoney = 1000
+        //resetTutorial()
+        //resetValues()
+        self.totalMoney = 213
         
         /* Set up button references */
         shopButton = self.childNode(withName: "shopButton") as! MSButtonNode
@@ -371,7 +384,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 })
             }
         }
-
+        
         
         
         
@@ -410,10 +423,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         fuelUpgrade.bottomTexture = SKTexture(imageNamed: "fuelBottom")
         fuelUpgrade.price = [0, 100, 300, 800, 2000]
         
+        if fuelUpgrade.level == 0 {
+            fuelUpgrade.level = 1
+            fuelLevel = 1
+        }
+        else {
+            fuelUpgrade.level = fuelLevel
+        }
         
-        fuelUpgrade.level = fuelLevel
         self.maxDepth = 50 * fuelUpgrade.level + 50
-        
         GameScene.upgradeList.append(fuelUpgrade)
         
         //MARK: PickaxeUpgrade
@@ -421,12 +439,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pickaxeUpgrade.upgradeType = .pickaxe
         pickaxeUpgrade.bottomTexture = SKTexture(imageNamed: "pickaxeBottom")
         pickaxeUpgrade.price = [0, 150, 400, 1200, 2500]
-        pickaxeUpgrade.level = pickaxeLevel
+        
+        if pickaxeUpgrade.level == 0 {
+            pickaxeLevel = 1
+            pickaxeUpgrade.level = 1
+        }
+        else {
+             self.pickaxeUpgrade.level = pickaxeLevel
+        }
+
         GameScene.tapPower = pickaxeUpgrade.level
         GameScene.upgradeList.append(pickaxeUpgrade)
         
-        GameScene.selectedUpgrade = pickaxeUpgrade
-        GameScene.selectedUpgrade = fuelUpgrade
+        GameScene.selectedUpgrade = self.pickaxeUpgrade
+        GameScene.selectedUpgrade = self.fuelUpgrade
         
     }
     
@@ -453,7 +479,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             /* Show shop sign */
             shopButton.isHidden = false
-            shopButton.run(SKAction(named: "MoveSignUp")!)
+            shopButton.run(SKAction(named: "MoveShopSignUp")!)
+            
+            /* Show credit sign */
+            creditButton.isHidden = false
+            creditButton.run(SKAction(named: "MoveCreditSignUp")!)
             
             /* Reset fuel */
             hasFuel = true
@@ -483,7 +513,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 
                 /* Hide shop sign */
                 self.shopButton.isHidden = true
-                self.shopButton.run(SKAction(named: "MoveSignDown")!)
+                self.shopButton.run(SKAction(named: "MoveShopSignDown")!)
+                
+                /* Hide credit sign */
+                self.creditButton.isHidden = true
+                self.creditButton.run(SKAction(named: "MoveCreditSignDown")!)
                 
                 if !self.tutorialPlayed {
                     self.warningLabel.fontSize = 28
@@ -492,7 +526,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     self.warningLabel.run(SKAction(named: "Reveal")!)
                 }
                 
-                self.run(SKAction.wait(forDuration: 1), completion:  {
+                self.run(SKAction.wait(forDuration: 1.5), completion:  {
                     self.childNode(withName: "title")?.isHidden = true
                 })
             })
@@ -624,8 +658,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
             else if depth > 175 {
                 spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 0, spawnMax: 1, texture: SKTexture(imageNamed: "copperOre1"), ingotTexture: SKTexture(imageNamed: "copperIngot"), debrisTexture: SKTexture(imageNamed: "copperDebris"), tapCount: 2, moneyValue: 2, crackTexture: SKTexture(imageNamed: "copperCrack1"))
-                 spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 3, spawnMax: 5, texture: SKTexture(imageNamed: "silverOre1"), ingotTexture: SKTexture(imageNamed: "silverIngot"), debrisTexture: SKTexture(imageNamed: "silverDebris"), tapCount: 3, moneyValue: 10, crackTexture: SKTexture(imageNamed: "silverCrack1"))
-                    spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 1, spawnMax: 1, texture: SKTexture(imageNamed: "goldOre1"), ingotTexture: SKTexture(imageNamed: "goldIngot"), debrisTexture: SKTexture(imageNamed: "goldDebris"), tapCount: 5, moneyValue: 25, crackTexture: SKTexture(imageNamed: "goldCrack1"))
+                spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 3, spawnMax: 5, texture: SKTexture(imageNamed: "silverOre1"), ingotTexture: SKTexture(imageNamed: "silverIngot"), debrisTexture: SKTexture(imageNamed: "silverDebris"), tapCount: 3, moneyValue: 10, crackTexture: SKTexture(imageNamed: "silverCrack1"))
+                spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 1, spawnMax: 1, texture: SKTexture(imageNamed: "goldOre1"), ingotTexture: SKTexture(imageNamed: "goldIngot"), debrisTexture: SKTexture(imageNamed: "goldDebris"), tapCount: 5, moneyValue: 25, crackTexture: SKTexture(imageNamed: "goldCrack1"))
             }
             else if depth > 130 {
                 spawnObstacles(groundSegment: newUndergroundSegment, spawnMin: 1, spawnMax: 2, texture: SKTexture(imageNamed: "copperOre1"), ingotTexture: SKTexture(imageNamed: "copperIngot"), debrisTexture: SKTexture(imageNamed: "copperDebris"), tapCount: 2, moneyValue: 2, crackTexture: SKTexture(imageNamed: "copperCrack1"))
@@ -663,11 +697,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /* Scrolling for collection mode */
     func scrollCollectMode() {
         /* Scroll background downwards */
-        if self.pickaxeUpgrade.level > 1 {
+        if GameScene.tapPower > 1 {
             undergroundLayer.position.y -= 6
         }
         else {
-        undergroundLayer.position.y -= 5
+            undergroundLayer.position.y -= 5
         }
         
         /* Get position of topmost ground segment in undergroundLayer */
@@ -700,7 +734,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         //MARK: EndOfCollectMode/StartOfCatchMode
         /* Check if only the 2 starting elements remain */
         if undergroundLayer.children.count == 2 && undergroundLayer.convert(undergroundLayer.children[1].position, to: self).y <= -295{
-            GameScene.gameState = .wait
+            GameScene.gameState = .inTranstion
             
             /* Reset camera to starting position */
             cameraNode.run(moveCameraUpAction)
@@ -717,16 +751,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /* Spawn obstacles for given segment input */
     func spawnObstacles(groundSegment: SKNode, spawnMin: Int, spawnMax: Int, texture: SKTexture, ingotTexture: SKTexture, debrisTexture: SKTexture, tapCount: Int, moneyValue: Int, crackTexture: SKTexture){
         /* Spawn random number of obstacles within constraints */
-        for _ in 1 ... Int(arc4random_uniform(UInt32(spawnMax - spawnMin))) + spawnMin {
-            
-            /* Declare new obstacle object */
-            let newObstacle = Obstacle(texture: texture, tapCount: tapCount, moneyValue: moneyValue, ingotTexture: ingotTexture, debrisTexture: debrisTexture, crackTexture: crackTexture)
-            
-            /* Randomize obstacle position */
-            newObstacle.position = groundSegment.convert(CGPoint(x: Double(arc4random_uniform(UInt32(280)) + 20), y: Double(arc4random_uniform(UInt32(280))) + 20), to: groundSegment)
-            
-            /* Add new obstacle to ground segment */
-            groundSegment.addChild(newObstacle)
+        let spawnRate = Int(arc4random_uniform(UInt32(spawnMax - spawnMin))) + spawnMin
+        if spawnRate >= 1 {
+            for _ in 1 ...  spawnRate{
+                
+                /* Declare new obstacle object */
+                let newObstacle = Obstacle(texture: texture, tapCount: tapCount, moneyValue: moneyValue, ingotTexture: ingotTexture, debrisTexture: debrisTexture, crackTexture: crackTexture)
+                
+                /* Randomize obstacle position */
+                newObstacle.position = groundSegment.convert(CGPoint(x: Double(arc4random_uniform(UInt32(280)) + 20), y: Double(arc4random_uniform(UInt32(280))) + 20), to: groundSegment)
+                
+                /* Add new obstacle to ground segment */
+                groundSegment.addChild(newObstacle)
+            }
         }
     }
     
@@ -1077,6 +1114,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         else {
             //MARK: EndOfCatchMode
+            GameScene.gameState = .catching
             runFinish()
         }
     }
@@ -1115,8 +1153,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func runFinish() {
-        if GameScene.gameState != .wait {
-            GameScene.gameState = .wait
+        if GameScene.gameState != .inTranstion {
+            GameScene.gameState = .inTranstion
             
             /* Bring results board down */
             finishBoard.run(SKAction(named: "MoveBoardDown")!, completion: { [unowned self] in

@@ -104,7 +104,13 @@ class Drill: SKSpriteNode {
 
             }
             else {
-                self.run(self.moveDownAction, completion:  { [unowned self] in
+                if GameScene.tapPower > 1 {
+                    self.moveDownAction.duration = 1
+                }
+                else {
+                    self.moveDownAction.duration = 1.2
+                }
+                self.run(self.moveDownAction,  completion:  { [unowned self] in
                     self.setScrollingUp()
                     self.physicsBody?.angularVelocity = 0
                     self.zRotation = CGFloat(0).degreesToRadians()
