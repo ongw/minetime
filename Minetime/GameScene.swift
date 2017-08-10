@@ -298,7 +298,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         //MARK: ResetTutorial
         //resetTutorial()
         //resetValues()
-        self.totalMoney = 213
+        //self.totalMoney = 213
         
         /* Set up button references */
         shopButton = self.childNode(withName: "shopButton") as! MSButtonNode
